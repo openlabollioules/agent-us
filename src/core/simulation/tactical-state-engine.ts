@@ -2,11 +2,11 @@ import type {
   ContactEffect,
   ContactTrack,
   ScenarioDefinition,
-  ScriptedEvent,
   TacticalEvent,
   TacticalState,
 } from "@/types";
 import { HIGHLIGHT_THRESHOLD, WATCH_THRESHOLD } from "./constants";
+import { toPublicEvent } from "./events";
 import { nextPosition } from "./movement";
 import { computeSuspicion } from "./suspicion";
 
@@ -49,20 +49,6 @@ function applyEffect(contact: ContactTrack, effect: ContactEffect): ContactTrack
     aisConfidence: effect.aisConfidence ?? contact.aisConfidence,
     optronicConfidence: effect.optronicConfidence ?? contact.optronicConfidence,
     relationTargetId: effect.setRelationTargetId ?? contact.relationTargetId,
-  };
-}
-
-/** Extrait la partie publique (sans `effects`) d'un événement scénarisé. */
-function toPublicEvent(event: ScriptedEvent): TacticalEvent {
-  return {
-    id: event.id,
-    turn: event.turn,
-    type: event.type,
-    severity: event.severity,
-    contactId: event.contactId,
-    title: event.title,
-    description: event.description,
-    visualCue: event.visualCue,
   };
 }
 
