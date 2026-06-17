@@ -3,6 +3,7 @@ import type {
   AnomalyType,
   ContactCategory,
   ContactFlag,
+  PlayerDiagnosis,
   TacticalEvent,
   Vec2,
 } from "./tactical";
@@ -86,4 +87,25 @@ export type ScoreResult = {
   feedback: string[];
   /** Indices que le joueur aurait dû exploiter. */
   missedEvidence: string[];
+};
+
+/** Données complètes du débrief pédagogique (panneau de fin de partie). */
+export type DebriefData = {
+  scenarioTitle: string;
+  score: number;
+  passed: boolean;
+  playerDiagnosis: PlayerDiagnosis;
+  expected: ExpectedDiagnosis;
+  contactCorrect: boolean;
+  anomalyCorrect: boolean;
+  feedback: string[];
+  /** Indices clés non exploités dans la justification. */
+  missedEvidence: string[];
+  /** Skills utiles déclenchées par le joueur. */
+  usefulSkills: string[];
+  /** Agents les plus sollicités. */
+  mostUsefulAgents: string[];
+  /** Explication métier/IA du scénario. */
+  explanation: string;
+  pedagogicalGoals: string[];
 };
