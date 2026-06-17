@@ -40,7 +40,7 @@ export const droneFollowingCargo: ScenarioDefinition = {
       affiliation: "unknown",
       position: { x: 300, y: 770 },
       speedKnots: 14,
-      headingDeg: 80,
+      headingDeg: 85,
       radarConfidence: 0.5,
       aisConfidence: 0,
       optronicConfidence: 0.4,

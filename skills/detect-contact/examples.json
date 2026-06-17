@@ -1,0 +1,39 @@
+{
+  "skill": "detect_contact",
+  "examples": [
+    {
+      "input": {
+        "contactId": "C-042",
+        "rangeNm": 12.4,
+        "bearingDeg": 137,
+        "speedKnots": 9.5,
+        "radarConfidence": 0.42,
+        "radarStatus": "unstable"
+      },
+      "output": {
+        "skill": "detect_contact",
+        "summary": "Contact C-042 détecté mais la confiance radar est faible.",
+        "confidence": 0.42,
+        "flags": ["low_radar_confidence"],
+        "recommendedAction": "Demander une confirmation optronique."
+      }
+    },
+    {
+      "input": {
+        "contactId": "C-018",
+        "rangeNm": 8.1,
+        "bearingDeg": 95,
+        "speedKnots": 14.2,
+        "radarConfidence": 0.83,
+        "radarStatus": "tracked"
+      },
+      "output": {
+        "skill": "detect_contact",
+        "summary": "Contact C-018 suivi correctement.",
+        "confidence": 0.83,
+        "flags": [],
+        "recommendedAction": "Continuer le suivi."
+      }
+    }
+  ]
+}

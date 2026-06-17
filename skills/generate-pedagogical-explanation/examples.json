@@ -1,0 +1,13 @@
+{
+  "skill": "generate_pedagogical_explanation",
+  "examples": [
+    {
+      "input": { "flags": ["constant_distance_following"] },
+      "output": "Un contact qui garde une distance presque constante avec un navire civil peut indiquer un comportement de suivi discret. Ce n'est pas une preuve, mais un indice à vérifier."
+    },
+    {
+      "input": { "flags": ["ais_route_mismatch"] },
+      "output": "L'AIS est une information déclarée par le navire. Si la route observée ne correspond pas à la route déclarée, cela peut venir d'une erreur, d'une panne ou d'un comportement volontairement ambigu."
+    }
+  ]
+}

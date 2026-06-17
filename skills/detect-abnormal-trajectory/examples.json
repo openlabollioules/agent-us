@@ -1,0 +1,31 @@
+{
+  "skill": "detect_abnormal_trajectory",
+  "examples": [
+    {
+      "input": {
+        "id": "C-042",
+        "flags": ["constant_distance_following", "low_radar_confidence"]
+      },
+      "output": {
+        "skill": "detect_abnormal_trajectory",
+        "summary": "Le contact C-042 présente un comportement inhabituel : constant_distance_following.",
+        "confidence": 0.78,
+        "flags": ["constant_distance_following"],
+        "recommendedAction": "Comparer avec l'AIS et demander une synthèse de suspicion."
+      }
+    },
+    {
+      "input": {
+        "id": "C-007",
+        "flags": ["optronic_confirmation_needed"]
+      },
+      "output": {
+        "skill": "detect_abnormal_trajectory",
+        "summary": "Aucune anomalie de trajectoire significative pour C-007.",
+        "confidence": 0.55,
+        "flags": [],
+        "recommendedAction": "Continuer la surveillance."
+      }
+    }
+  ]
+}

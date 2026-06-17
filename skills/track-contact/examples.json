@@ -1,0 +1,56 @@
+{
+  "skill": "track_contact",
+  "examples": [
+    {
+      "input": {
+        "id": "C-042",
+        "label": "Contact 042",
+        "category": "unknown",
+        "affiliation": "unknown",
+        "position": { "x": 14.2, "y": -3.1 },
+        "speedKnots": 18.0,
+        "headingDeg": 80,
+        "history": [
+          { "turn": 3, "position": { "x": 12.0, "y": -2.0 }, "speedKnots": 9.0, "headingDeg": 45 },
+          { "turn": 4, "position": { "x": 14.2, "y": -3.1 }, "speedKnots": 18.0, "headingDeg": 80 }
+        ],
+        "radarConfidence": 0.6,
+        "aisConfidence": 0.4,
+        "optronicConfidence": 0.5,
+        "suspicionScore": 0.5,
+        "flags": []
+      },
+      "output": {
+        "skill": "track_contact",
+        "summary": "Le contact C-042 présente un changement de mouvement notable.",
+        "confidence": 0.72,
+        "flags": ["trajectory_anomaly"],
+        "recommendedAction": "Demander au NavigationAgent d'analyser la cohérence de la trajectoire."
+      }
+    },
+    {
+      "input": {
+        "id": "C-007",
+        "label": "Contact 007",
+        "category": "cargo",
+        "affiliation": "neutral",
+        "position": { "x": 5.0, "y": 1.0 },
+        "speedKnots": 12.0,
+        "headingDeg": 90,
+        "history": [],
+        "radarConfidence": 0.8,
+        "aisConfidence": 0.9,
+        "optronicConfidence": 0.7,
+        "suspicionScore": 0.1,
+        "flags": []
+      },
+      "output": {
+        "skill": "track_contact",
+        "summary": "Historique insuffisant pour analyser la trajectoire.",
+        "confidence": 0.3,
+        "flags": ["insufficient_history"],
+        "recommendedAction": "Continuer le suivi pendant un tour supplémentaire."
+      }
+    }
+  ]
+}

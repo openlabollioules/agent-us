@@ -1,0 +1,37 @@
+{
+  "skill": "classify_surface_contact",
+  "examples": [
+    {
+      "input": {
+        "contactId": "C-042",
+        "thermalSignature": "compact_hot_spot",
+        "shape": "low_profile_object",
+        "imageQuality": 0.62,
+        "classificationHint": "small_surface_object"
+      },
+      "output": {
+        "skill": "classify_surface_contact",
+        "summary": "Classification probable pour C-042 : small_surface_object. Qualité d'image : 62 %.",
+        "confidence": 0.62,
+        "flags": ["small_object_near_civilian"],
+        "recommendedAction": "Utiliser cette classification dans la synthèse de suspicion."
+      }
+    },
+    {
+      "input": {
+        "contactId": "C-007",
+        "thermalSignature": "medium",
+        "shape": "large_hull",
+        "imageQuality": 0.38,
+        "classificationHint": "cargo"
+      },
+      "output": {
+        "skill": "classify_surface_contact",
+        "summary": "Classification probable pour C-007 : cargo. Qualité d'image : 38 %.",
+        "confidence": 0.38,
+        "flags": [],
+        "recommendedAction": "Continuer le suivi et demander une nouvelle observation."
+      }
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "skill": "estimate_threat_level",
+  "examples": [
+    {
+      "input": { "id": "C-042", "suspicionScore": 0.82 },
+      "output": {
+        "skill": "estimate_threat_level",
+        "summary": "Niveau de suspicion pour C-042 : élevé.",
+        "confidence": 0.82,
+        "flags": [],
+        "recommendedAction": "Proposer à l'opérateur humain de poser un diagnostic."
+      }
+    },
+    {
+      "input": { "id": "C-007", "suspicionScore": 0.3 },
+      "output": {
+        "skill": "estimate_threat_level",
+        "summary": "Niveau de suspicion pour C-007 : faible.",
+        "confidence": 0.3,
+        "flags": [],
+        "recommendedAction": "Continuer à recueillir des indices."
+      }
+    }
+  ]
+}

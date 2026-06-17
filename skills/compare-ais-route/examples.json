@@ -1,0 +1,40 @@
+{
+  "skill": "compare_ais_route",
+  "examples": [
+    {
+      "input": {
+        "contact": { "id": "C-014" },
+        "ais": {
+          "contactId": "C-014",
+          "shipName": "MV Aurora",
+          "declaredType": "cargo",
+          "declaredRoute": "Marseille -> Gênes",
+          "declaredRouteStatus": "mismatch"
+        }
+      },
+      "output": {
+        "skill": "compare_ais_route",
+        "summary": "La trajectoire observée de C-014 diffère de sa route AIS déclarée.",
+        "confidence": 0.82,
+        "flags": ["ais_route_mismatch"],
+        "recommendedAction": "Demander au ThreatAssessmentAgent d'intégrer cette incohérence à l'analyse."
+      }
+    },
+    {
+      "input": {
+        "contact": { "id": "C-042" },
+        "ais": {
+          "contactId": "C-042",
+          "declaredRouteStatus": "missing"
+        }
+      },
+      "output": {
+        "skill": "compare_ais_route",
+        "summary": "Aucune route AIS n'est disponible pour C-042.",
+        "confidence": 0.55,
+        "flags": ["ais_missing"],
+        "recommendedAction": "Continuer la surveillance."
+      }
+    }
+  ]
+}

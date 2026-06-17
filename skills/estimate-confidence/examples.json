@@ -1,0 +1,25 @@
+{
+  "skill": "estimate_confidence",
+  "examples": [
+    {
+      "input": { "values": [0.4, 0.3] },
+      "output": {
+        "skill": "estimate_confidence",
+        "summary": "Confiance combinée : 35 %.",
+        "confidence": 0.35,
+        "flags": ["low_confidence"],
+        "recommendedAction": "Demander une confirmation croisée entre capteurs."
+      }
+    },
+    {
+      "input": { "values": [0.8, 0.7, 0.75] },
+      "output": {
+        "skill": "estimate_confidence",
+        "summary": "Confiance combinée : 75 %.",
+        "confidence": 0.75,
+        "flags": [],
+        "recommendedAction": "Utiliser cette confiance dans l'évaluation."
+      }
+    }
+  ]
+}
