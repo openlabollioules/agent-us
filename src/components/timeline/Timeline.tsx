@@ -1,3 +1,6 @@
+"use client";
+
+import { AnimatePresence, motion } from "framer-motion";
 import type { TacticalEvent } from "@/types";
 import { SEVERITY_COLOR } from "@/components/ui-labels";
 
@@ -14,9 +17,14 @@ export function Timeline({ events, onSelectContact }: TimelineProps) {
         Timeline
       </h2>
       <ol className="flex-1 space-y-2 overflow-y-auto p-3">
+        <AnimatePresence initial={false}>
         {[...events].reverse().map((e) => (
-          <li
+          <motion.li
             key={e.id}
+            layout
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.25 }}
             onClick={() => e.contactId && onSelectContact?.(e.contactId)}
             className={`rounded-md bg-slate-900/50 p-2 ${
               e.contactId ? "cursor-pointer hover:bg-slate-900" : ""
@@ -32,8 +40,9 @@ export function Timeline({ events, onSelectContact }: TimelineProps) {
               </span>
             </div>
             <p className="mt-0.5 pl-4 text-xs text-slate-400">{e.description}</p>
-          </li>
+          </motion.li>
         ))}
+        </AnimatePresence>
       </ol>
     </section>
   );

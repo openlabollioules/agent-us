@@ -1,3 +1,6 @@
+"use client";
+
+import { AnimatePresence, motion } from "framer-motion";
 import type { AgentMessage } from "@/types";
 import { AGENT_EMOJI } from "@/components/ui-labels";
 
@@ -19,8 +22,16 @@ export function AgentConsole({ messages, onSelectContact }: AgentConsoleProps) {
             Aucun message pour l&apos;instant.
           </li>
         )}
+        <AnimatePresence initial={false}>
         {[...messages].reverse().map((m) => (
-          <li key={m.id} className="rounded-md bg-slate-900/60 p-2.5">
+          <motion.li
+            key={m.id}
+            layout
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+            className="rounded-md bg-slate-900/60 p-2.5"
+          >
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-sky-300">
                 {AGENT_EMOJI[m.agentId] ?? "🤖"} {m.agentName}
@@ -51,8 +62,9 @@ export function AgentConsole({ messages, onSelectContact }: AgentConsoleProps) {
                 </span>
               ))}
             </div>
-          </li>
+          </motion.li>
         ))}
+        </AnimatePresence>
       </ul>
     </section>
   );

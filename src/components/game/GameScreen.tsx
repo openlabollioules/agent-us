@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useGameStore } from "@/store/game-store";
+import { getScenario } from "@/data/scenarios";
+import { STATUS_LABEL } from "@/components/ui-labels";
 import { TacticalMap, ContactDetailsPanel } from "@/components/tactical-map";
 import { AgentConsole } from "@/components/agents/AgentConsole";
 import { ActionSuggestions } from "@/components/actions/ActionSuggestions";
@@ -26,15 +28,29 @@ export function GameScreen() {
 
   const selectedContact = state.contacts.find((c) => c.id === selectedContactId);
   const awaiting = state.status === "awaiting_player";
+  const maxTurns = getScenario(state.scenarioId).maxTurns;
+  const progress = Math.min(100, Math.round((state.turn / maxTurns) * 100));
 
   return (
     <div className="flex h-screen flex-col gap-3 p-3">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-lg font-bold">🛰️ Agent Us</h1>
         <div className="flex items-center gap-3 text-sm text-slate-400">
-          <span>
-            Tour <span className="font-semibold text-slate-200">{state.turn}</span> ·{" "}
-            {state.status}
+          <span className="flex items-center gap-2">
+            <span>
+              Tour{" "}
+              <span className="font-semibold text-slate-200">{state.turn}</span>
+              /{maxTurns}
+            </span>
+            <span className="hidden h-1.5 w-24 overflow-hidden rounded bg-slate-700 sm:block">
+              <span
+                className="block h-full rounded bg-sky-400 transition-all duration-500"
+                style={{ width: `${progress}%` }}
+              />
+            </span>
+            <span className="rounded bg-slate-700 px-2 py-0.5 text-xs text-slate-200">
+              {STATUS_LABEL[state.status]}
+            </span>
           </span>
           <button
             onClick={step}

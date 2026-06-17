@@ -3,7 +3,16 @@ import type {
   AnomalyType,
   EventSeverity,
   ScenarioDifficulty,
+  SimulationStatus,
 } from "@/types";
+
+/** Libellé FR du statut de simulation. */
+export const STATUS_LABEL: Record<SimulationStatus, string> = {
+  not_started: "Non démarré",
+  running: "En cours",
+  awaiting_player: "Décision attendue",
+  completed: "Terminé",
+};
 
 /** Emoji représentant chaque agent dans la console. */
 export const AGENT_EMOJI: Record<string, string> = {

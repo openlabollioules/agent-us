@@ -127,10 +127,12 @@ export function TacticalMap({
             const isSelected = c.id === selectedContactId;
 
             return (
-              <g
+              <motion.g
                 key={c.id}
                 data-contact-id={c.id}
-                transform={`translate(${c.position.x} ${c.position.y})`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1, x: c.position.x, y: c.position.y }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
                 onClick={() => onSelectContact?.(c.id)}
                 className="cursor-pointer"
               >
@@ -181,7 +183,7 @@ export function TacticalMap({
                 >
                   {c.id}
                 </text>
-              </g>
+              </motion.g>
             );
           })}
         </g>
