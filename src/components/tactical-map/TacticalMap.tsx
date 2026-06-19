@@ -22,9 +22,11 @@ export type TacticalMapProps = {
 const MAP_CENTER = MAP_SIZE / 2;
 const GRID_STEP = 100;
 
+type House = { x: number; y: number; roof: string };
 type Landmass = {
   d: string;
   lighthouse?: { x: number; y: number };
+  houses?: House[];
 };
 
 /** Côtes stylisées (coordonnées monde 0..MAP_SIZE, Y vers le bas). */
@@ -33,23 +35,44 @@ const LANDMASSES: Landmass[] = [
     // Côte nord-est (zone côtière des scénarios)
     d: "M1000,0 L1000,300 C 915,300 875,225 900,165 C 918,118 868,70 760,62 C 700,57 662,22 652,0 Z",
     lighthouse: { x: 705, y: 60 },
+    houses: [
+      { x: 845, y: 150, roof: "#dc2626" },
+      { x: 885, y: 185, roof: "#2563eb" },
+      { x: 925, y: 230, roof: "#ea580c" },
+    ],
   },
   {
     // Côte sud-ouest
     d: "M0,1000 L0,715 C 95,705 152,758 172,832 C 188,892 128,952 0,1000 Z",
+    houses: [
+      { x: 70, y: 875, roof: "#ea580c" },
+      { x: 110, y: 825, roof: "#dc2626" },
+    ],
   },
   {
     // Îlot sud-est
     d: "M1000,1000 L1000,818 C 928,840 898,902 920,958 C 936,986 970,996 1000,1000 Z",
+    houses: [{ x: 958, y: 932, roof: "#2563eb" }],
   },
+];
+
+/** Bouées de navigation (couleur babord/tribord), repères en mer. */
+const BUOYS = [
+  { x: 430, y: 470, color: "#ef4444" },
+  { x: 560, y: 540, color: "#22c55e" },
+  { x: 360, y: 640, color: "#22c55e" },
 ];
 
 function cameraTransform(
   center: { x: number; y: number },
   zoom: number,
 ): string {
-  const tx = MAP_CENTER - zoom * center.x;
-  const ty = MAP_CENTER - zoom * center.y;
+  // Borne basse de translation pour que la vue reste DANS le monde :
+  // on ne panne jamais au-delà des bords → les îles de coin restent visibles.
+  const min = MAP_SIZE * (1 - zoom);
+  const clamp = (v: number) => Math.min(0, Math.max(min, v));
+  const tx = clamp(MAP_CENTER - zoom * center.x);
+  const ty = clamp(MAP_CENTER - zoom * center.y);
   return `translate(${tx} ${ty}) scale(${zoom})`;
 }
 
@@ -122,12 +145,10 @@ export function TacticalMap({
             <stop offset="100%" stopColor="#05172a" stopOpacity="0" />
           </radialGradient>
           <linearGradient id="land" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#2c4a32" />
-            <stop offset="100%" stopColor="#1a3322" />
+            <stop offset="0%" stopColor="#4f9258" />
+            <stop offset="55%" stopColor="#357045" />
+            <stop offset="100%" stopColor="#1f4a2c" />
           </linearGradient>
-          <filter id="shallow" x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="9" />
-          </filter>
           <filter id="contactShadow" x="-60%" y="-60%" width="220%" height="220%">
             <feDropShadow dx="0" dy="1.5" stdDeviation="2.5" floodColor="#000814" floodOpacity="0.6" />
           </filter>
@@ -205,12 +226,14 @@ export function TacticalMap({
             </motion.g>
           </g>
 
-          {/* Eaux peu profondes (halo flou turquoise autour des côtes) */}
-          <g filter="url(#shallow)" opacity={0.55}>
-            {LANDMASSES.map((land, i) => (
-              <path key={`shallow-${i}`} d={land.d} fill="#1f7a8c" />
-            ))}
-          </g>
+          {/* Eaux peu profondes (anneaux turquoise translucides, sans filtre :
+              aucun artefact de découpe au zoom) */}
+          {LANDMASSES.map((land, i) => (
+            <g key={`shallow-${i}`} fill="none">
+              <path d={land.d} stroke="#2dd4bf" strokeWidth={30} opacity={0.1} />
+              <path d={land.d} stroke="#5eead4" strokeWidth={16} opacity={0.16} />
+            </g>
+          ))}
 
           {/* Écume du littoral */}
           {LANDMASSES.map((land, i) => (
@@ -218,9 +241,9 @@ export function TacticalMap({
               key={`foam-${i}`}
               d={land.d}
               fill="none"
-              stroke="#dbeafe"
-              strokeWidth={6}
-              opacity={0.3}
+              stroke="#eef6ff"
+              strokeWidth={5}
+              opacity={0.4}
             />
           ))}
 
@@ -235,10 +258,18 @@ export function TacticalMap({
                 strokeWidth={6}
                 strokeLinejoin="round"
               />
+              {land.houses?.map((h, j) => (
+                <House key={j} x={h.x} y={h.y} roof={h.roof} />
+              ))}
               {land.lighthouse && (
                 <Lighthouse x={land.lighthouse.x} y={land.lighthouse.y} />
               )}
             </g>
+          ))}
+
+          {/* Bouées de navigation (en mer) */}
+          {BUOYS.map((b, i) => (
+            <Buoy key={`buoy-${i}`} x={b.x} y={b.y} color={b.color} />
           ))}
 
           {/* Grille */}
@@ -484,6 +515,28 @@ export function TacticalMap({
         <Legend color="#fbbf24" label="Inconnu" />
       </div>
     </div>
+  );
+}
+
+/** Petite maison (toit coloré) — touche de couleur sur les îles. */
+function House({ x, y, roof }: { x: number; y: number; roof: string }) {
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <rect x={-6} y={-3} width={12} height={9} rx={1} fill="#e7d8b8" stroke="#7c6f57" strokeWidth={0.6} />
+      <polygon points="-8,-3 0,-12 8,-3" fill={roof} stroke="#1f2937" strokeWidth={0.6} />
+    </g>
+  );
+}
+
+/** Bouée de navigation (repère coloré flottant). */
+function Buoy({ x, y, color }: { x: number; y: number; color: string }) {
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <ellipse cx={0} cy={8} rx={9} ry={3} fill="#0b1626" opacity={0.3} />
+      <rect x={-1.5} y={-12} width={3} height={10} fill={color} />
+      <circle cx={0} cy={0} r={6} fill={color} stroke="#0b1626" strokeWidth={1} />
+      <circle cx={-1.8} cy={-1.8} r={1.8} fill="#ffffff" opacity={0.6} />
+    </g>
   );
 }
 
