@@ -25,7 +25,7 @@ function bar(label: string, value: number) {
 /** Panneau de détails d'un contact sélectionné. */
 export function ContactDetailsPanel({ contact }: ContactDetailsPanelProps) {
   return (
-    <section className="rounded-lg border border-slate-700 bg-slate-800/60 p-3">
+    <section className="rounded-xl border border-slate-700/60 bg-slate-900/50 p-3 backdrop-blur">
       <h2 className="mb-2 text-sm font-semibold text-slate-300">
         Contact sélectionné
       </h2>

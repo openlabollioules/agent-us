@@ -12,7 +12,7 @@ type AgentConsoleProps = {
 /** Console des messages d'agents (auteur, confiance, skills, contacts liés). */
 export function AgentConsole({ messages, onSelectContact }: AgentConsoleProps) {
   return (
-    <section className="flex h-full flex-col rounded-lg border border-slate-700 bg-slate-800/60">
+    <section className="flex h-full flex-col rounded-xl border border-slate-700/60 bg-slate-900/50 backdrop-blur">
       <h2 className="border-b border-slate-700 px-3 py-2 text-sm font-semibold text-slate-300">
         Console agents
       </h2>

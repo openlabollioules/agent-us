@@ -33,8 +33,13 @@ export function GameScreen() {
 
   return (
     <div className="flex h-screen flex-col gap-3 p-3">
-      <header className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-lg font-bold">🛰️ Agent Us</h1>
+      <header className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-700/60 bg-slate-900/50 px-4 py-2 backdrop-blur">
+        <h1 className="text-lg font-bold tracking-tight">
+          🛰️{" "}
+          <span className="bg-gradient-to-r from-sky-300 to-amber-300 bg-clip-text text-transparent">
+            Agent Us
+          </span>
+        </h1>
         <div className="flex items-center gap-3 text-sm text-slate-400">
           <span className="flex items-center gap-2">
             <span>

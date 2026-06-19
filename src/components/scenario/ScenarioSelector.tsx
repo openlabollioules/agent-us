@@ -13,7 +13,12 @@ export function ScenarioSelector() {
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-8 px-6 py-12">
       <header className="text-center">
-        <h1 className="text-4xl font-black tracking-tight">🛰️ Agent Us</h1>
+        <h1 className="text-5xl font-black tracking-tight">
+          🛰️{" "}
+          <span className="bg-gradient-to-r from-sky-300 via-cyan-200 to-amber-300 bg-clip-text text-transparent">
+            Agent Us
+          </span>
+        </h1>
         <p className="mt-2 text-slate-400">
           Serious game naval multi-agents — observe, interroge les agents IA et
           identifie le comportement anormal.
@@ -24,7 +29,7 @@ export function ScenarioSelector() {
         {SCENARIOS.map((s) => (
           <article
             key={s.id}
-            className="flex flex-col gap-3 rounded-xl border border-slate-700 bg-slate-800/60 p-5 transition hover:border-amber-500/60"
+            className="flex flex-col gap-3 rounded-xl border border-slate-700/60 bg-slate-900/50 p-5 backdrop-blur transition hover:-translate-y-0.5 hover:border-amber-500/60 hover:shadow-lg hover:shadow-amber-500/5"
           >
             <div className="flex items-center justify-between">
               <span className="rounded-full bg-slate-700 px-2.5 py-0.5 text-xs font-medium text-slate-200">
