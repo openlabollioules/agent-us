@@ -1,7 +1,54 @@
 import type { LLMProvider } from "@/types";
 import { MockLLMProvider } from "./mock-provider";
 import { VLLMProvider } from "./vllm-provider";
+import { OpenAICompatibleProvider } from "./openai-compatible-provider";
 import { withMockFallback } from "./fallback";
+
+export type LLMEnv = Partial<Record<string, string | undefined>>;
+
+/**
+ * Crée le backend de **verbalisation** depuis l'environnement.
+ *
+ * `null` = mode déterministe (aucun backend) : les messages d'agents restent
+ * tels quels. Sinon, un client OpenAI-compatible pointant vers Hermes / vLLM /
+ * OpenRouter. C'est ce provider qu'utilise la route `/api/llm/verbalize` —
+ * volontairement SANS fallback mock (verbalize() retombe déjà sur le texte
+ * déterministe en cas d'erreur, sans le remplacer par du texte générique).
+ */
+export function createVerbalizeProvider(
+  env: LLMEnv = process.env,
+): LLMProvider | null {
+  const provider = (env.LLM_PROVIDER ?? "").trim().toLowerCase();
+
+  if (provider === "hermes") {
+    return new OpenAICompatibleProvider(
+      "hermes",
+      env.HERMES_BASE_URL ?? "http://localhost:8642/v1",
+      env.HERMES_MODEL ?? "hermes-agent",
+      env.HERMES_API_KEY ?? "EMPTY",
+    );
+  }
+
+  if (provider === "vllm") {
+    return new OpenAICompatibleProvider(
+      "vllm",
+      env.VLLM_BASE_URL ?? "http://localhost:8000/v1",
+      env.VLLM_MODEL ?? "Qwen/Qwen3-30B-A3B",
+      env.LLM_API_KEY ?? "EMPTY",
+    );
+  }
+
+  if (provider === "openrouter") {
+    return new OpenAICompatibleProvider(
+      "openrouter",
+      env.OPENROUTER_BASE_URL ?? "https://openrouter.ai/api/v1",
+      env.OPENROUTER_MODEL ?? "qwen/qwen3-30b-a3b",
+      env.LLM_API_KEY ?? "",
+    );
+  }
+
+  return null;
+}
 
 export type LLMConfig = {
   provider?: string;

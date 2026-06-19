@@ -1,6 +1,10 @@
 export { MockLLMProvider } from "./mock-provider";
+export { OpenAICompatibleProvider } from "./openai-compatible-provider";
+export type { OpenAICompatibleOptions } from "./openai-compatible-provider";
 export { VLLMProvider } from "./vllm-provider";
 export type { VLLMOptions } from "./vllm-provider";
 export { withMockFallback } from "./fallback";
-export { createProvider, readEnvConfig } from "./factory";
-export type { LLMConfig } from "./factory";
+export { createProvider, readEnvConfig, createVerbalizeProvider } from "./factory";
+export type { LLMConfig, LLMEnv } from "./factory";
+export { verbalize, verbalizeMessages } from "./verbalize";
+export { verbalizeMessagesViaApi } from "./verbalize-client";

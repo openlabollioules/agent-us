@@ -5,9 +5,15 @@ export type ChatMessage = {
   content: string;
 };
 
-export type LLMProviderId = "mock" | "vllm" | "claude" | "openai";
+export type LLMProviderId =
+  | "mock"
+  | "vllm"
+  | "hermes"
+  | "openrouter"
+  | "claude"
+  | "openai";
 
 export interface LLMProvider {
-  id: LLMProviderId;
+  readonly id: LLMProviderId;
   chat(messages: ChatMessage[]): Promise<string>;
 }

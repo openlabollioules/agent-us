@@ -1,0 +1,80 @@
+{
+  "version": "1.0.0",
+  "application": "Agent Us",
+  "runtime": "Hermes (nousresearch/hermes-agent)",
+  "description": "Bundle de skills portables décrivant les capacités des subagents Hermes d'Agent Us (serious game naval, univers fictif et pédagogique). Chaque skill possède un coeur déterministe ; Hermes verbalise sans inventer de fait.",
+  "skills": [
+    {
+      "name": "detect_contact",
+      "path": "detect-contact/SKILL.md",
+      "description": "Décrit un contact radar simulé et signale une confiance radar faible, sans inférer d'hostilité.",
+      "ownerAgents": ["RadarAgent"],
+      "mcps": ["RadarMCP"],
+      "returns": "SkillResult"
+    },
+    {
+      "name": "track_contact",
+      "path": "track-contact/SKILL.md",
+      "description": "Analyse l'évolution d'un contact sur les deux derniers points d'historique ; signale anomalie ou historique insuffisant.",
+      "ownerAgents": ["RadarAgent", "NavigationAgent"],
+      "mcps": ["RadarMCP", "AISMCP"],
+      "returns": "SkillResult"
+    },
+    {
+      "name": "compare_ais_route",
+      "path": "compare-ais-route/SKILL.md",
+      "description": "Compare la route observée avec la route AIS déclarée ; une incohérence reste un indice, pas une preuve.",
+      "ownerAgents": ["NavigationAgent"],
+      "mcps": ["AISMCP"],
+      "returns": "SkillResult"
+    },
+    {
+      "name": "detect_abnormal_trajectory",
+      "path": "detect-abnormal-trajectory/SKILL.md",
+      "description": "Détecte un comportement de mouvement inhabituel à partir des drapeaux du contact, en conservant les drapeaux précis.",
+      "ownerAgents": ["NavigationAgent", "ThreatAssessmentAgent"],
+      "mcps": ["AISMCP", "RadarMCP", "OptronicMCP"],
+      "returns": "SkillResult"
+    },
+    {
+      "name": "classify_surface_contact",
+      "path": "classify-surface-contact/SKILL.md",
+      "description": "Classe un objet maritime à partir d'une observation optronique ; classification probabiliste avec qualité d'image.",
+      "ownerAgents": ["OptronicAgent"],
+      "mcps": ["OptronicMCP"],
+      "returns": "SkillResult"
+    },
+    {
+      "name": "estimate_confidence",
+      "path": "estimate-confidence/SKILL.md",
+      "description": "Combine plusieurs niveaux de confiance capteur en une moyenne ; une confiance faible déclenche un croisement de sources.",
+      "ownerAgents": ["RadarAgent", "OptronicAgent"],
+      "mcps": ["RadarMCP", "OptronicMCP"],
+      "returns": "SkillResult"
+    },
+    {
+      "name": "estimate_threat_level",
+      "path": "estimate-threat-level/SKILL.md",
+      "description": "Estime un niveau de suspicion fictif (faible/moyen/élevé) à partir du score de suspicion ; jamais une certitude de menace.",
+      "ownerAgents": ["ThreatAssessmentAgent"],
+      "mcps": ["RadarMCP", "AISMCP", "OptronicMCP"],
+      "returns": "SkillResult"
+    },
+    {
+      "name": "suggest_next_actions",
+      "path": "suggest-next-actions/SKILL.md",
+      "description": "Propose jusqu'à 5 actions human-in-the-loop pertinentes selon l'état tactique ; aiguille vers les subagents et leurs skills.",
+      "ownerAgents": ["GameMasterAgent"],
+      "mcps": ["ScenarioMCP"],
+      "returns": "SuggestedAction[]"
+    },
+    {
+      "name": "generate_pedagogical_explanation",
+      "path": "generate-pedagogical-explanation/SKILL.md",
+      "description": "Explique en mots simples un concept de surveillance maritime relié aux drapeaux du contact ; un indice n'est jamais une preuve.",
+      "ownerAgents": ["ThreatAssessmentAgent"],
+      "mcps": ["RadarMCP", "AISMCP", "OptronicMCP"],
+      "returns": "string"
+    }
+  ]
+}
