@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import type { TacticalEvent } from "@/types";
 import { useGameStore } from "@/store/game-store";
 import { getScenario } from "@/data/scenarios";
 import { STATUS_LABEL } from "@/components/ui-labels";
@@ -23,6 +25,22 @@ export function GameScreen() {
   const reset = useGameStore((s) => s.reset);
 
   const [showDiagnosis, setShowDiagnosis] = useState(false);
+  const [alert, setAlert] = useState<TacticalEvent | null>(null);
+  const shownAlertId = useRef<string | undefined>(undefined);
+
+  const latestHighId = state
+    ? [...state.events].reverse().find((e) => e.severity === "high")?.id
+    : undefined;
+
+  useEffect(() => {
+    if (!state || !latestHighId) return;
+    if (latestHighId === shownAlertId.current) return;
+    shownAlertId.current = latestHighId;
+    const high = state.events.find((e) => e.id === latestHighId) ?? null;
+    setAlert(high);
+    const t = setTimeout(() => setAlert(null), 3200);
+    return () => clearTimeout(t);
+  }, [latestHighId, state]);
 
   if (!state) return null;
 
@@ -32,7 +50,7 @@ export function GameScreen() {
   const progress = Math.min(100, Math.round((state.turn / maxTurns) * 100));
 
   return (
-    <div className="flex h-screen flex-col gap-3 p-3">
+    <div className="relative flex h-screen flex-col gap-3 p-3">
       <header className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-700/60 bg-slate-900/50 px-4 py-2 backdrop-blur">
         <h1 className="text-lg font-bold tracking-tight">
           🛰️{" "}
@@ -131,6 +149,48 @@ export function GameScreen() {
           </div>
         </div>
       </div>
+
+      {/* Emergency Meeting — alerte plein écran sur événement majeur */}
+      <AnimatePresence>
+        {alert && (
+          <motion.div
+            className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setAlert(null)}
+          >
+            <motion.div
+              className="mx-4 max-w-md rounded-2xl border-2 border-red-500/60 bg-slate-900 px-8 py-6 text-center shadow-2xl shadow-red-900/40"
+              initial={{ scale: 0.7, y: 12 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 240, damping: 18 }}
+            >
+              <motion.div
+                className="text-5xl"
+                animate={{ scale: [1, 1.15, 1] }}
+                transition={{ duration: 0.9, repeat: Infinity }}
+              >
+                🚨
+              </motion.div>
+              <h2 className="mt-2 text-2xl font-black tracking-widest text-red-400">
+                ALERTE
+              </h2>
+              <p className="mt-2 text-lg font-semibold text-slate-100">
+                {alert.title}
+              </p>
+              <p className="mt-1 text-sm text-slate-400">{alert.description}</p>
+              <button
+                onClick={() => setAlert(null)}
+                className="mt-4 rounded-md bg-red-500 px-5 py-1.5 text-sm font-bold text-white hover:bg-red-400"
+              >
+                Compris
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

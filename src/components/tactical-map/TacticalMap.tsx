@@ -136,6 +136,23 @@ export function TacticalMap({
             <stop offset="0%" stopColor="#3d6b45" />
             <stop offset="100%" stopColor="#16301f" />
           </radialGradient>
+          {/* Faisceau de balayage sonar (clair près du capteur, fondu au bord) */}
+          <radialGradient
+            id="sweep"
+            gradientUnits="userSpaceOnUse"
+            cx="0"
+            cy="0"
+            r="460"
+          >
+            <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
+          </radialGradient>
+          {/* Découpe : tout ce qui décore une île reste DANS l'île. */}
+          {LANDMASSES.map((land, i) => (
+            <clipPath key={`clip-${i}`} id={`landclip-${i}`}>
+              <path d={land.d} />
+            </clipPath>
+          ))}
         </defs>
 
         {/* Océan (couvre tout le viewport, hors caméra) */}
@@ -171,7 +188,8 @@ export function TacticalMap({
             />
           ))}
 
-          {/* Terres : intérieur vert + large contour sable (plage) + reliefs */}
+          {/* Terres : intérieur vert + plage (contour sable), puis reliefs et
+              arbres DÉCOUPÉS à la forme de l'île (jamais dans la mer). */}
           {LANDMASSES.map((land, i) => (
             <g key={`land-${i}`}>
               <path
@@ -181,17 +199,19 @@ export function TacticalMap({
                 strokeWidth={6}
                 strokeLinejoin="round"
               />
-              {land.hills.map((h, j) => (
-                <ellipse
-                  key={j}
-                  cx={h.cx}
-                  cy={h.cy}
-                  rx={h.rx}
-                  ry={h.ry}
-                  fill="url(#hill)"
-                  opacity={0.85}
-                />
-              ))}
+              <g clipPath={`url(#landclip-${i})`}>
+                {land.hills.map((h, j) => (
+                  <ellipse
+                    key={j}
+                    cx={h.cx}
+                    cy={h.cy}
+                    rx={h.rx}
+                    ry={h.ry}
+                    fill="url(#hill)"
+                    opacity={0.85}
+                  />
+                ))}
+              </g>
             </g>
           ))}
 
@@ -226,6 +246,30 @@ export function TacticalMap({
             fill="#38bdf8"
             animate={{ opacity: [0.9, 0.3, 0.9] }}
             transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+          />
+
+          {/* Balayage sonar rotatif */}
+          <g transform={`translate(${MAP_CENTER} ${MAP_CENTER})`} pointerEvents="none">
+            <motion.g
+              style={{ transformOrigin: "0px 0px" }}
+              animate={{ rotate: 360 }}
+              transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+            >
+              <polygon points="0,0 0,-460 -296,-352" fill="url(#sweep)" />
+              <line x1={0} y1={0} x2={0} y2={-460} stroke="#7dd3fc" strokeWidth={1.5} opacity={0.4} />
+            </motion.g>
+          </g>
+
+          {/* Onde de ping périodique */}
+          <motion.circle
+            cx={MAP_CENTER}
+            cy={MAP_CENTER}
+            fill="none"
+            stroke="#38bdf8"
+            strokeWidth={2}
+            pointerEvents="none"
+            animate={{ r: [10, 460], opacity: [0.45, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeOut" }}
           />
 
           {/* Liens relationnels (ex : USV ↔ cargo suivi) */}
@@ -282,6 +326,18 @@ export function TacticalMap({
                 onClick={() => onSelectContact?.(c.id)}
                 className="cursor-pointer"
               >
+                {/* Blip de détection (onde unique au montage) */}
+                <motion.circle
+                  cx={0}
+                  cy={0}
+                  fill="none"
+                  stroke="#7dd3fc"
+                  strokeWidth={2}
+                  initial={{ r: 6, opacity: 0.7 }}
+                  animate={{ r: 46, opacity: 0 }}
+                  transition={{ duration: 1.1, ease: "easeOut" }}
+                />
+
                 {tier !== "none" && (
                   <motion.circle
                     cx={0}

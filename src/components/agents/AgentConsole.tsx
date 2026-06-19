@@ -1,8 +1,35 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { AgentMessage } from "@/types";
 import { AGENT_EMOJI } from "@/components/ui-labels";
+
+/** Affiche un texte caractère par caractère (effet « radio »). Tape une fois. */
+function Typewriter({ text }: { text: string }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!text) return;
+    const id = setInterval(() => {
+      setCount((v) => {
+        if (v >= text.length) {
+          clearInterval(id);
+          return v;
+        }
+        return v + 1;
+      });
+    }, 16);
+    return () => clearInterval(id);
+  }, [text]);
+
+  return (
+    <>
+      {text.slice(0, count)}
+      {count < text.length && <span className="animate-pulse">▋</span>}
+    </>
+  );
+}
 
 type AgentConsoleProps = {
   messages: AgentMessage[];
@@ -42,7 +69,9 @@ export function AgentConsole({ messages, onSelectContact }: AgentConsoleProps) {
                 </span>
               )}
             </div>
-            <p className="mt-1 text-sm text-slate-200">{m.message}</p>
+            <p className="mt-1 text-sm text-slate-200">
+              <Typewriter key={m.message} text={m.message} />
+            </p>
             <div className="mt-1.5 flex flex-wrap gap-1">
               {m.referencedContacts.map((c) => (
                 <button
