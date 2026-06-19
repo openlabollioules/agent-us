@@ -22,36 +22,25 @@ export type TacticalMapProps = {
 const MAP_CENTER = MAP_SIZE / 2;
 const GRID_STEP = 100;
 
-type Peak = { x: number; y: number; w: number; h: number };
 type Landmass = {
   d: string;
-  peaks: Peak[];
   lighthouse?: { x: number; y: number };
 };
 
-/** Côtes stylisées (coordonnées monde 0..MAP_SIZE, Y vers le bas) + reliefs. */
+/** Côtes stylisées (coordonnées monde 0..MAP_SIZE, Y vers le bas). */
 const LANDMASSES: Landmass[] = [
   {
     // Côte nord-est (zone côtière des scénarios)
     d: "M1000,0 L1000,300 C 915,300 875,225 900,165 C 918,118 868,70 760,62 C 700,57 662,22 652,0 Z",
-    peaks: [
-      { x: 880, y: 175, w: 110, h: 95 },
-      { x: 945, y: 245, w: 70, h: 60 },
-    ],
     lighthouse: { x: 705, y: 60 },
   },
   {
     // Côte sud-ouest
     d: "M0,1000 L0,715 C 95,705 152,758 172,832 C 188,892 128,952 0,1000 Z",
-    peaks: [
-      { x: 78, y: 905, w: 95, h: 80 },
-      { x: 128, y: 835, w: 60, h: 50 },
-    ],
   },
   {
     // Îlot sud-est
     d: "M1000,1000 L1000,818 C 928,840 898,902 920,958 C 936,986 970,996 1000,1000 Z",
-    peaks: [{ x: 960, y: 950, w: 58, h: 48 }],
   },
 ];
 
@@ -160,11 +149,6 @@ export function TacticalMap({
                       0.6 0 0 0 -0.2"
             />
           </filter>
-          <linearGradient id="mountain" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#7c7264" />
-            <stop offset="55%" stopColor="#544b40" />
-            <stop offset="100%" stopColor="#332c24" />
-          </linearGradient>
           {/* Faisceau de balayage sonar (clair près du capteur, fondu au bord) */}
           <radialGradient
             id="sweep"
@@ -176,12 +160,6 @@ export function TacticalMap({
             <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.3" />
             <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
           </radialGradient>
-          {/* Découpe : tout ce qui décore une île reste DANS l'île. */}
-          {LANDMASSES.map((land, i) => (
-            <clipPath key={`clip-${i}`} id={`landclip-${i}`}>
-              <path d={land.d} />
-            </clipPath>
-          ))}
         </defs>
 
         {/* Océan (couvre tout le viewport, hors caméra) */}
@@ -246,8 +224,8 @@ export function TacticalMap({
             />
           ))}
 
-          {/* Terres : intérieur vert + plage (contour sable), puis montagnes
-              DÉCOUPÉES à la forme de l'île (jamais dans la mer). */}
+          {/* Terres : intérieur vert + plage (contour sable) + phare.
+              Tout est dans le groupe caméra → bouge avec le zoom de focus. */}
           {LANDMASSES.map((land, i) => (
             <g key={`land-${i}`}>
               <path
@@ -257,26 +235,9 @@ export function TacticalMap({
                 strokeWidth={6}
                 strokeLinejoin="round"
               />
-              <g clipPath={`url(#landclip-${i})`}>
-                {land.peaks.map((p, j) => (
-                  <g key={j}>
-                    {/* Versant */}
-                    <polygon
-                      points={`${p.x - p.w / 2},${p.y} ${p.x + p.w / 2},${p.y} ${p.x},${p.y - p.h}`}
-                      fill="url(#mountain)"
-                      stroke="#2a251f"
-                      strokeWidth={1}
-                    />
-                    {/* Sommet enneigé */}
-                    <polygon
-                      points={`${p.x - p.w * 0.17},${p.y - p.h * 0.62} ${p.x + p.w * 0.17},${p.y - p.h * 0.62} ${p.x},${p.y - p.h}`}
-                      fill="#eaf2f6"
-                      opacity={0.92}
-                    />
-                  </g>
-                ))}
-              </g>
-              {land.lighthouse && <Lighthouse x={land.lighthouse.x} y={land.lighthouse.y} />}
+              {land.lighthouse && (
+                <Lighthouse x={land.lighthouse.x} y={land.lighthouse.y} />
+              )}
             </g>
           ))}
 

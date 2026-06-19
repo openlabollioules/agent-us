@@ -195,44 +195,42 @@ export function GameScreen() {
         </div>
       </div>
 
-      {/* Emergency Meeting — alerte plein écran sur événement majeur */}
+      {/* Emergency Meeting — bandeau non bloquant (la carte reste visible) */}
       <AnimatePresence>
         {alert && (
           <motion.div
-            className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setAlert(null)}
+            className="pointer-events-none absolute left-1/2 top-4 z-50"
+            initial={{ opacity: 0, y: -24, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: -24, x: "-50%" }}
+            transition={{ type: "spring", stiffness: 260, damping: 20 }}
           >
-            <motion.div
-              className="mx-4 max-w-md rounded-2xl border-2 border-red-500/60 bg-slate-900 px-8 py-6 text-center shadow-2xl shadow-red-900/40"
-              initial={{ scale: 0.7, y: 12 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 240, damping: 18 }}
-            >
-              <motion.div
-                className="text-5xl"
-                animate={{ scale: [1, 1.15, 1] }}
+            <div className="pointer-events-auto flex max-w-md items-center gap-3 rounded-xl border-2 border-red-500/60 bg-slate-900/95 px-5 py-3 shadow-2xl shadow-red-900/40">
+              <motion.span
+                className="text-3xl"
+                animate={{ scale: [1, 1.2, 1] }}
                 transition={{ duration: 0.9, repeat: Infinity }}
               >
                 🚨
-              </motion.div>
-              <h2 className="mt-2 text-2xl font-black tracking-widest text-red-400">
-                ALERTE
-              </h2>
-              <p className="mt-2 text-lg font-semibold text-slate-100">
-                {alert.title}
-              </p>
-              <p className="mt-1 text-sm text-slate-400">{alert.description}</p>
+              </motion.span>
+              <div className="min-w-0">
+                <p className="text-xs font-black tracking-widest text-red-400">
+                  ALERTE
+                </p>
+                <p className="truncate text-sm font-semibold text-slate-100">
+                  {alert.title}
+                </p>
+                <p className="truncate text-xs text-slate-400">
+                  {alert.description}
+                </p>
+              </div>
               <button
                 onClick={() => setAlert(null)}
-                className="mt-4 rounded-md bg-red-500 px-5 py-1.5 text-sm font-bold text-white hover:bg-red-400"
+                className="ml-1 shrink-0 rounded-md bg-red-500 px-2.5 py-1 text-xs font-bold text-white hover:bg-red-400"
               >
-                Compris
+                OK
               </button>
-            </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
