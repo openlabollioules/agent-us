@@ -140,8 +140,8 @@ export function TacticalMap({
           <radialGradient
             id="sweep"
             gradientUnits="userSpaceOnUse"
-            cx="0"
-            cy="0"
+            cx={MAP_CENTER}
+            cy={MAP_CENTER}
             r="460"
           >
             <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.3" />
@@ -248,17 +248,30 @@ export function TacticalMap({
             transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
           />
 
-          {/* Balayage sonar rotatif */}
-          <g transform={`translate(${MAP_CENTER} ${MAP_CENTER})`} pointerEvents="none">
-            <motion.g
-              style={{ transformOrigin: "0px 0px" }}
-              animate={{ rotate: 360 }}
-              transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-            >
-              <polygon points="0,0 0,-460 -296,-352" fill="url(#sweep)" />
-              <line x1={0} y1={0} x2={0} y2={-460} stroke="#7dd3fc" strokeWidth={1.5} opacity={0.4} />
-            </motion.g>
-          </g>
+          {/* Balayage sonar rotatif (apex au centre, pivot sur le centre) */}
+          <motion.g
+            pointerEvents="none"
+            style={{
+              transformBox: "view-box",
+              transformOrigin: `${MAP_CENTER}px ${MAP_CENTER}px`,
+            }}
+            animate={{ rotate: 360 }}
+            transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+          >
+            <polygon
+              points={`${MAP_CENTER},${MAP_CENTER} ${MAP_CENTER},${MAP_CENTER - 460} ${MAP_CENTER - 296},${MAP_CENTER - 352}`}
+              fill="url(#sweep)"
+            />
+            <line
+              x1={MAP_CENTER}
+              y1={MAP_CENTER}
+              x2={MAP_CENTER}
+              y2={MAP_CENTER - 460}
+              stroke="#7dd3fc"
+              strokeWidth={1.5}
+              opacity={0.4}
+            />
+          </motion.g>
 
           {/* Onde de ping périodique */}
           <motion.circle
