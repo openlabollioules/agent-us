@@ -45,7 +45,17 @@ Types de retour (voir `manifest.json`) :
 
 ## 4. Où déposer ces skills côté Hermes
 
-Hermes monte un volume persistant **`/opt/data`** (mémoire + skills), côté hôte `~/DEV/hermes/data` (voir `hermes/README.md`). Déposez-y ce bundle en conservant l'arborescence `<kebab-case>/SKILL.md` + `manifest.json`.
+Hermes lit ses skills dans **`/opt/data/skills/<catégorie>/<skill>/SKILL.md`** (côté hôte `~/DEV/hermes/data/skills`, voir `hermes/README.md`).
+
+Utilisez le script de synchro plutôt qu'une copie manuelle :
+
+```bash
+./hermes/sync-skills.sh            # → catégorie "agent-us"
+# ou : ./hermes/sync-skills.sh <catégorie>
+# ou : HERMES_DATA=/chemin/data ./hermes/sync-skills.sh
+```
+
+Il copie chaque `<skill>/SKILL.md` vers `~/DEV/hermes/data/skills/agent-us/`, écrit le `DESCRIPTION.md` de catégorie et retire les skills supprimés. Ré-exécutez-le après toute modification/ajout de skill. (`manifest.json` n'est pas copié : Hermes indexe lui-même.)
 
 > **Note de version.** Le schéma on-disk exact (nom du sous-dossier, format d'index, chargement automatique) **dépend de la version de Hermes** installée. Adaptez le point de montage / le nom de répertoire à votre version ; **ces `SKILL.md` restent la source de vérité** du comportement attendu des subagents, quelle que soit la manière dont Hermes les indexe.
 
