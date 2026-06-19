@@ -42,6 +42,32 @@ export function GameScreen() {
     return () => clearTimeout(t);
   }, [latestHighId, state]);
 
+  // Lecture automatique des tours
+  const [auto, setAuto] = useState(false);
+  const running = state?.status === "running";
+  useEffect(() => {
+    if (!auto || !running) return;
+    const id = setInterval(() => step(), 2200);
+    return () => clearInterval(id);
+  }, [auto, running, state, step]);
+
+  // Raccourcis clavier : Espace = tour suivant, Échap = fermer/désélectionner
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (state?.status === "running") step();
+      } else if (e.key === "Escape") {
+        setShowDiagnosis(false);
+        selectContact(undefined);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [state, step, selectContact]);
+
   if (!state) return null;
 
   const selectedContact = state.contacts.find((c) => c.id === selectedContactId);
@@ -78,9 +104,21 @@ export function GameScreen() {
           <button
             onClick={step}
             disabled={state.status !== "running"}
+            title="Espace"
             className="rounded-md bg-sky-500 px-3 py-1.5 font-semibold text-slate-900 hover:bg-sky-400 disabled:opacity-40"
           >
             Tour suivant ▶
+          </button>
+          <button
+            onClick={() => setAuto((v) => !v)}
+            disabled={state.status !== "running"}
+            className={`rounded-md px-3 py-1.5 font-semibold disabled:opacity-40 ${
+              auto
+                ? "bg-emerald-500 text-slate-900 hover:bg-emerald-400"
+                : "bg-slate-700 text-slate-200 hover:bg-slate-600"
+            }`}
+          >
+            {auto ? "⏸ Auto" : "▶ Auto"}
           </button>
           <button
             onClick={() => setShowDiagnosis((v) => !v)}
@@ -140,7 +178,14 @@ export function GameScreen() {
 
         {/* Colonne droite : contact + console agents */}
         <div className="flex min-h-0 flex-col gap-3">
-          <ContactDetailsPanel contact={selectedContact} />
+          <ContactDetailsPanel
+            contact={selectedContact}
+            onAsk={(c) =>
+              sendInstruction(
+                `ThreatAssessmentAgent, fais une synthèse de la situation pour ${c.id}.`,
+              )
+            }
+          />
           <div className="min-h-0 flex-1">
             <AgentConsole
               messages={state.agentMessages}

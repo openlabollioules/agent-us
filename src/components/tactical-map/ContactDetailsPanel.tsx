@@ -3,6 +3,7 @@ import { CATEGORY_LABEL } from "./contact-visuals";
 
 type ContactDetailsPanelProps = {
   contact?: ContactTrack;
+  onAsk?: (contact: ContactTrack) => void;
 };
 
 function bar(label: string, value: number) {
@@ -23,7 +24,10 @@ function bar(label: string, value: number) {
 }
 
 /** Panneau de détails d'un contact sélectionné. */
-export function ContactDetailsPanel({ contact }: ContactDetailsPanelProps) {
+export function ContactDetailsPanel({
+  contact,
+  onAsk,
+}: ContactDetailsPanelProps) {
   return (
     <section className="rounded-xl border border-slate-700/60 bg-slate-900/50 p-3 backdrop-blur">
       <h2 className="mb-2 text-sm font-semibold text-slate-300">
@@ -48,6 +52,14 @@ export function ContactDetailsPanel({ contact }: ContactDetailsPanelProps) {
           <p className="pt-1 text-xs text-slate-400">
             Indices : {contact.flags.join(", ") || "aucun"}
           </p>
+          {onAsk && (
+            <button
+              onClick={() => onAsk(contact)}
+              className="mt-1 w-full rounded-md bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-500"
+            >
+              🔎 Demander une analyse à un agent
+            </button>
+          )}
         </div>
       )}
     </section>
