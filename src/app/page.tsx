@@ -9,7 +9,7 @@ export default function Home() {
   const screen = useGameStore((s) => s.screen);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100">
+    <main className="min-h-screen bg-gradient-to-br from-[#0a1426] via-[#0c2a44] to-[#0a1a30] text-slate-100">
       {screen === "select" && <ScenarioSelector />}
       {screen === "playing" && <GameScreen />}
       {screen === "debrief" && <DebriefPanel />}

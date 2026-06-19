@@ -9,9 +9,9 @@ type ActionSuggestionsProps = {
 /** Liste des actions suggérées au joueur (priorité, explication pédagogique). */
 export function ActionSuggestions({ actions, onRun }: ActionSuggestionsProps) {
   return (
-    <section className="rounded-xl border border-slate-700/60 bg-slate-900/50 p-3 backdrop-blur">
-      <h2 className="mb-2 text-sm font-semibold text-slate-300">
-        Actions suggérées
+    <section className="rounded-xl border border-emerald-500/30 bg-slate-900/50 p-3 backdrop-blur">
+      <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-emerald-300">
+        <span className="h-2 w-2 rounded-full bg-emerald-400" /> Actions suggérées
       </h2>
       {actions.length === 0 ? (
         <p className="text-sm text-slate-500">

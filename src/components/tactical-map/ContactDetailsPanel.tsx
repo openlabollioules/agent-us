@@ -29,9 +29,9 @@ export function ContactDetailsPanel({
   onAsk,
 }: ContactDetailsPanelProps) {
   return (
-    <section className="rounded-xl border border-slate-700/60 bg-slate-900/50 p-3 backdrop-blur">
-      <h2 className="mb-2 text-sm font-semibold text-slate-300">
-        Contact sélectionné
+    <section className="rounded-xl border border-violet-500/30 bg-slate-900/50 p-3 backdrop-blur">
+      <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-violet-300">
+        <span className="h-2 w-2 rounded-full bg-violet-400" /> Contact sélectionné
       </h2>
       {!contact ? (
         <p className="text-sm text-slate-500">Clique un contact sur la carte.</p>

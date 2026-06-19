@@ -22,11 +22,9 @@ export type TacticalMapProps = {
 const MAP_CENTER = MAP_SIZE / 2;
 const GRID_STEP = 100;
 
-type House = { x: number; y: number; roof: string };
 type Landmass = {
   d: string;
   lighthouse?: { x: number; y: number };
-  houses?: House[];
 };
 
 /** Côtes stylisées (coordonnées monde 0..MAP_SIZE, Y vers le bas). */
@@ -35,46 +33,23 @@ const LANDMASSES: Landmass[] = [
     // Côte nord-est (zone côtière des scénarios)
     d: "M1000,0 L1000,300 C 915,300 875,225 900,165 C 918,118 868,70 760,62 C 700,57 662,22 652,0 Z",
     lighthouse: { x: 705, y: 60 },
-    houses: [
-      { x: 845, y: 150, roof: "#dc2626" },
-      { x: 885, y: 185, roof: "#2563eb" },
-      { x: 925, y: 230, roof: "#ea580c" },
-    ],
   },
   {
     // Côte sud-ouest
     d: "M0,1000 L0,715 C 95,705 152,758 172,832 C 188,892 128,952 0,1000 Z",
-    houses: [
-      { x: 70, y: 875, roof: "#ea580c" },
-      { x: 110, y: 825, roof: "#dc2626" },
-    ],
   },
   {
     // Îlot sud-est
     d: "M1000,1000 L1000,818 C 928,840 898,902 920,958 C 936,986 970,996 1000,1000 Z",
-    houses: [{ x: 958, y: 932, roof: "#2563eb" }],
   },
 ];
 
-/** Bouées de navigation (couleur babord/tribord), repères en mer. */
+/** Bouées de navigation (couleur babord/tribord), repères en pleine mer. */
 const BUOYS = [
   { x: 430, y: 470, color: "#ef4444" },
   { x: 560, y: 540, color: "#22c55e" },
   { x: 360, y: 640, color: "#22c55e" },
 ];
-
-function cameraTransform(
-  center: { x: number; y: number },
-  zoom: number,
-): string {
-  // Borne basse de translation pour que la vue reste DANS le monde :
-  // on ne panne jamais au-delà des bords → les îles de coin restent visibles.
-  const min = MAP_SIZE * (1 - zoom);
-  const clamp = (v: number) => Math.min(0, Math.max(min, v));
-  const tx = clamp(MAP_CENTER - zoom * center.x);
-  const ty = clamp(MAP_CENTER - zoom * center.y);
-  return `translate(${tx} ${ty}) scale(${zoom})`;
-}
 
 function gridLines(): number[] {
   const lines: number[] = [];
@@ -112,9 +87,6 @@ export function TacticalMap({
   onSelectContact,
 }: TacticalMapProps) {
   const focus = state.visualFocus;
-  const camera = focus
-    ? cameraTransform(focus.center, focus.zoom)
-    : `translate(0 0) scale(1)`;
   const focusIds = new Set(focus?.contactIds ?? []);
   const byId = new Map(state.contacts.map((c) => [c.id, c]));
   const [hoveredId, setHoveredId] = useState<string | undefined>(undefined);
@@ -135,14 +107,14 @@ export function TacticalMap({
       >
         <defs>
           <linearGradient id="ocean" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#0a2a44" />
-            <stop offset="55%" stopColor="#082338" />
-            <stop offset="100%" stopColor="#05172a" />
+            <stop offset="0%" stopColor="#0e4d72" />
+            <stop offset="55%" stopColor="#0a3a5c" />
+            <stop offset="100%" stopColor="#072742" />
           </linearGradient>
-          <radialGradient id="oceanGlow" cx="50%" cy="48%" r="60%">
-            <stop offset="0%" stopColor="#155e85" stopOpacity="0.55" />
-            <stop offset="60%" stopColor="#0c3a59" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="#05172a" stopOpacity="0" />
+          <radialGradient id="oceanGlow" cx="50%" cy="46%" r="62%">
+            <stop offset="0%" stopColor="#22a3c8" stopOpacity="0.55" />
+            <stop offset="60%" stopColor="#0e6488" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="#072742" stopOpacity="0" />
           </radialGradient>
           <linearGradient id="land" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#4f9258" />
@@ -193,10 +165,7 @@ export function TacticalMap({
         />
         <rect width={MAP_SIZE} height={MAP_SIZE} fill="url(#oceanGlow)" />
 
-        <g
-          transform={camera}
-          style={{ transition: "transform 0.6s ease", transformOrigin: "0 0" }}
-        >
+        <g>
           {/* Houle + moutons d'écume (sous les côtes : la terre les masque) */}
           <g pointerEvents="none">
             {SWELLS.map((y) => (
@@ -258,9 +227,6 @@ export function TacticalMap({
                 strokeWidth={6}
                 strokeLinejoin="round"
               />
-              {land.houses?.map((h, j) => (
-                <House key={j} x={h.x} y={h.y} roof={h.roof} />
-              ))}
               {land.lighthouse && (
                 <Lighthouse x={land.lighthouse.x} y={land.lighthouse.y} />
               )}
@@ -515,16 +481,6 @@ export function TacticalMap({
         <Legend color="#fbbf24" label="Inconnu" />
       </div>
     </div>
-  );
-}
-
-/** Petite maison (toit coloré) — touche de couleur sur les îles. */
-function House({ x, y, roof }: { x: number; y: number; roof: string }) {
-  return (
-    <g transform={`translate(${x} ${y})`}>
-      <rect x={-6} y={-3} width={12} height={9} rx={1} fill="#e7d8b8" stroke="#7c6f57" strokeWidth={0.6} />
-      <polygon points="-8,-3 0,-12 8,-3" fill={roof} stroke="#1f2937" strokeWidth={0.6} />
-    </g>
   );
 }
 
