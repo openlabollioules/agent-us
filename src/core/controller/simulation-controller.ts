@@ -25,6 +25,11 @@ const AGENT_FOR_EVENT: Partial<Record<TacticalEventType, AgentId>> = {
   optronic_hint: "optronic-agent",
   threat_level_changed: "threat-assessment-agent",
   system: "game-master-agent",
+  // V2 — nouveaux domaines (réutilise les agents existants).
+  weather_changed: "radar-agent",
+  acoustic_contact: "radar-agent",
+  sensitive_area_alert: "navigation-agent",
+  behavior_assessed: "threat-assessment-agent",
 };
 
 export type DiagnoseResult = {

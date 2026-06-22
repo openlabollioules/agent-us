@@ -4,6 +4,7 @@ import type {
   ScenarioDefinition,
   TacticalEvent,
   TacticalState,
+  WorldEffect,
 } from "@/types";
 import { HIGHLIGHT_THRESHOLD, WATCH_THRESHOLD } from "./constants";
 import { toPublicEvent } from "./events";
@@ -49,6 +50,69 @@ function applyEffect(contact: ContactTrack, effect: ContactEffect): ContactTrack
     aisConfidence: effect.aisConfidence ?? contact.aisConfidence,
     optronicConfidence: effect.optronicConfidence ?? contact.optronicConfidence,
     relationTargetId: effect.setRelationTargetId ?? contact.relationTargetId,
+  };
+}
+
+/** Champs de contexte d'environnement V2 modifiables par `worldEffects`. */
+type WorldFields = Pick<
+  TacticalState,
+  "weather" | "acousticContacts" | "behaviorProfiles"
+>;
+
+/**
+ * Applique les effets d'environnement V2 (météo, acoustique, comportement) de
+ * façon pure et immuable. `sensitiveAreas` est statique (porté par le spread).
+ * Sans effet, renvoie les champs inchangés (références identiques → état stable).
+ */
+function applyWorldEffects(
+  state: TacticalState,
+  effects: WorldEffect[],
+): WorldFields {
+  if (effects.length === 0) {
+    return {
+      weather: state.weather,
+      acousticContacts: state.acousticContacts,
+      behaviorProfiles: state.behaviorProfiles,
+    };
+  }
+
+  let weather = state.weather;
+  let acoustic = state.acousticContacts ? [...state.acousticContacts] : [];
+  let behaviors = state.behaviorProfiles ? [...state.behaviorProfiles] : [];
+
+  for (const effect of effects) {
+    switch (effect.kind) {
+      case "set_weather":
+        weather = { ...effect.weather };
+        break;
+      case "add_acoustic":
+        acoustic = [
+          ...acoustic.filter((a) => a.id !== effect.contact.id),
+          { ...effect.contact },
+        ];
+        break;
+      case "update_acoustic":
+        acoustic = acoustic.map((a) =>
+          a.id === effect.id ? { ...a, ...effect.patch } : a,
+        );
+        break;
+      case "remove_acoustic":
+        acoustic = acoustic.filter((a) => a.id !== effect.id);
+        break;
+      case "set_behavior":
+        behaviors = [
+          ...behaviors.filter((b) => b.contactId !== effect.profile.contactId),
+          { ...effect.profile },
+        ];
+        break;
+    }
+  }
+
+  return {
+    weather,
+    // On préserve `undefined` (sémantique V1) si rien n'existe ni n'est ajouté.
+    acousticContacts: acoustic.length > 0 ? acoustic : state.acousticContacts,
+    behaviorProfiles: behaviors.length > 0 ? behaviors : state.behaviorProfiles,
   };
 }
 
@@ -102,6 +166,16 @@ export function createInitialState(
     agentMessages: [],
     suggestedActions: [],
     playerActions: [],
+    // V2 — contexte d'environnement (copies immuables ; `undefined` en V1).
+    weather: scenario.initialWeather
+      ? { ...scenario.initialWeather }
+      : undefined,
+    sensitiveAreas: scenario.sensitiveAreas?.map((a) => ({
+      ...a,
+      area: { ...a.area, center: { ...a.area.center } },
+    })),
+    acousticContacts: scenario.initialAcousticContacts?.map((a) => ({ ...a })),
+    behaviorProfiles: scenario.initialBehaviorProfiles?.map((b) => ({ ...b })),
   };
 }
 
@@ -158,6 +232,12 @@ export function advanceTurn(
     });
   });
 
+  // 4. Applique les effets d'environnement V2 (météo, acoustique, comportement).
+  const world = applyWorldEffects(
+    state,
+    scriptedEvents.flatMap((event) => event.worldEffects ?? []),
+  );
+
   const status =
     nextTurn >= scenario.maxTurns ? "awaiting_player" : "running";
 
@@ -167,5 +247,6 @@ export function advanceTurn(
     status,
     contacts,
     events: [...state.events, ...scriptedEvents.map(toPublicEvent)],
+    ...world,
   };
 }

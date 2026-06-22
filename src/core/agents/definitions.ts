@@ -13,18 +13,32 @@ export const AGENT_DEFINITIONS: Record<AgentId, AgentDefinition> = {
   "radar-agent": {
     id: "radar-agent",
     name: "RadarAgent",
-    role: "Analyste des pistes radar simulées.",
+    role: "Analyste des pistes radar, météo capteur et acoustique simulées.",
     style: "Précis mais compréhensible par un lycéen.",
-    skills: ["detect_contact", "track_contact", "estimate_confidence"],
-    mcps: ["radar-mcp"],
+    skills: [
+      "detect_contact",
+      "track_contact",
+      "estimate_confidence",
+      // V2 — météo capteur et acoustique.
+      "assess_weather_impact",
+      "classify_acoustic_contact",
+    ],
+    mcps: ["radar-mcp", "weather-mcp", "acoustic-mcp"],
   },
   "navigation-agent": {
     id: "navigation-agent",
     name: "NavigationAgent",
-    role: "Analyste des trajectoires et de la cohérence AIS.",
+    role: "Analyste des trajectoires, de la cohérence AIS et de la proximité des zones sensibles.",
     style: "Analytique, clair, pédagogique.",
-    skills: ["track_contact", "compare_ais_route", "detect_abnormal_trajectory"],
-    mcps: ["ais-mcp"],
+    skills: [
+      "track_contact",
+      "compare_ais_route",
+      "detect_abnormal_trajectory",
+      // V2 — proximité de zone et profil de comportement.
+      "check_area_proximity",
+      "assess_behavior_pattern",
+    ],
+    mcps: ["ais-mcp", "geo-mcp"],
   },
   "optronic-agent": {
     id: "optronic-agent",

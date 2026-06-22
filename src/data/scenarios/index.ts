@@ -2,12 +2,24 @@ import type { ScenarioDefinition, ScenarioMeta } from "@/types";
 import { droneFollowingCargo } from "./drone-following-cargo";
 import { aisRouteMismatch } from "./ais-route-mismatch";
 import { radarLoss } from "./radar-loss";
+import { weatherFalsePositive } from "./weather-false-positive";
+import { fishingVesselAmbiguous } from "./fishing-vessel-ambiguous";
+import { droneNearSensitiveArea } from "./drone-near-sensitive-area";
+import { submarineContact } from "./submarine-contact";
+import { dualAnomaly } from "./dual-anomaly";
 
-/** Tous les scénarios V1, dans l'ordre d'affichage. */
+/** Tous les scénarios, dans l'ordre d'affichage (V1 puis V2). */
 export const SCENARIOS: ScenarioDefinition[] = [
+  // V1
   droneFollowingCargo,
   aisRouteMismatch,
   radarLoss,
+  // V2
+  weatherFalsePositive,
+  fishingVesselAmbiguous,
+  droneNearSensitiveArea,
+  submarineContact,
+  dualAnomaly,
 ];
 
 const SCENARIOS_BY_ID = new Map<string, ScenarioDefinition>(
@@ -37,3 +49,10 @@ export function listScenarioMeta(): ScenarioMeta[] {
 }
 
 export { droneFollowingCargo, aisRouteMismatch, radarLoss };
+export {
+  weatherFalsePositive,
+  fishingVesselAmbiguous,
+  droneNearSensitiveArea,
+  submarineContact,
+  dualAnomaly,
+};

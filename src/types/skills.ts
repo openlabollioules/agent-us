@@ -21,7 +21,12 @@ export type SkillName =
   | "estimate_confidence"
   | "estimate_threat_level"
   | "suggest_next_actions"
-  | "generate_pedagogical_explanation";
+  | "generate_pedagogical_explanation"
+  // V2 — nouveaux domaines.
+  | "assess_weather_impact"
+  | "classify_acoustic_contact"
+  | "check_area_proximity"
+  | "assess_behavior_pattern";
 
 /**
  * Résultat standard d'une skill analytique. Forme commune renvoyée par la

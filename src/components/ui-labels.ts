@@ -28,6 +28,9 @@ export const ANOMALY_LABELS: Record<AnomalyType, string> = {
   ais_route_mismatch: "Incohérence route AIS",
   sensor_uncertainty: "Incertitude capteur",
   false_positive: "Fausse alerte",
+  ambiguous_behavior: "Comportement ambigu",
+  loitering_near_sensitive_area: "Rôdeur près d'une zone sensible",
+  subsurface_contact: "Contact sous-marin",
   unknown: "Indéterminé",
 };
 

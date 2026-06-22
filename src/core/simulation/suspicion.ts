@@ -18,6 +18,14 @@ export const SUSPICION_FLAG_WEIGHTS: Record<ContactFlag, number> = {
   low_radar_confidence: 0.1,
   optronic_confirmation_needed: 0.05,
   possible_false_positive: -0.4,
+  // V2 — nouveaux domaines.
+  // Présence persistante au bord d'une zone sensible : indice fort.
+  near_sensitive_area: 0.2,
+  // Tenu uniquement à l'acoustique (ni radar de surface ni AIS) : intrigant.
+  acoustic_only: 0.2,
+  // Dégradation météo : drapeau de CONTEXTE, neutre en soi (la fausse alerte
+  // météo reste portée par `possible_false_positive`, négatif).
+  weather_degraded: 0,
 };
 
 /**

@@ -75,6 +75,38 @@
       "ownerAgents": ["ThreatAssessmentAgent"],
       "mcps": ["RadarMCP", "AISMCP", "OptronicMCP"],
       "returns": "string"
+    },
+    {
+      "name": "assess_weather_impact",
+      "path": "assess-weather-impact/SKILL.md",
+      "description": "Estime si une anomalie capteur s'explique par la météo dégradée ; une perte de piste par mauvais temps est attendue, donc moins suspecte.",
+      "ownerAgents": ["RadarAgent"],
+      "mcps": ["WeatherMCP"],
+      "returns": "SkillResult"
+    },
+    {
+      "name": "classify_acoustic_contact",
+      "path": "classify-acoustic-contact/SKILL.md",
+      "description": "Interprète une piste acoustique (relèvement + classification) ; un contact immergé est un faisceau d'indices à croiser, pas une preuve.",
+      "ownerAgents": ["RadarAgent"],
+      "mcps": ["AcousticMCP"],
+      "returns": "SkillResult"
+    },
+    {
+      "name": "check_area_proximity",
+      "path": "check-area-proximity/SKILL.md",
+      "description": "Situe un contact par rapport aux zones sensibles ; distingue transit et stationnement (loitering) au bord d'une zone.",
+      "ownerAgents": ["NavigationAgent"],
+      "mcps": ["GeoMCP"],
+      "returns": "SkillResult"
+    },
+    {
+      "name": "assess_behavior_pattern",
+      "path": "assess-behavior-pattern/SKILL.md",
+      "description": "Interprète le profil de comportement déduit d'un contact ; une faible cohérence signale un comportement ambigu à ne pas sur-interpréter.",
+      "ownerAgents": ["NavigationAgent"],
+      "mcps": [],
+      "returns": "SkillResult"
     }
   ]
 }

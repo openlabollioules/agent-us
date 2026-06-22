@@ -1,4 +1,8 @@
-import type { ContactCategory } from "./tactical";
+import type {
+  AcousticClassification,
+  ContactCategory,
+  WeatherCondition,
+} from "./tactical";
 
 /**
  * Données renvoyées par les MCP simulés. Centralisées dans les types pour que
@@ -46,7 +50,46 @@ export type OptronicObservation = {
   classificationHint: OptronicClassificationHint;
 };
 
-export type McpId = "radar-mcp" | "ais-mcp" | "optronic-mcp" | "scenario-mcp";
+export type McpId =
+  | "radar-mcp"
+  | "ais-mcp"
+  | "optronic-mcp"
+  | "scenario-mcp"
+  // V2 — nouveaux domaines de capteurs/contexte.
+  | "weather-mcp"
+  | "acoustic-mcp"
+  | "geo-mcp";
+
+/** Rapport météo simulé : conditions + impact capteur (WeatherMCP). */
+export type WeatherReport = {
+  condition: WeatherCondition;
+  /** Dégradation capteur induite (0..1). */
+  sensorDegradation: number;
+  degradesRadar: boolean;
+  degradesOptronic: boolean;
+  summary: string;
+};
+
+/** Rapport acoustique simulé pour un contact (AcousticMCP). */
+export type AcousticReport = {
+  hasTrack: boolean;
+  trackId?: string;
+  bearingDeg?: number;
+  classification?: AcousticClassification;
+  /** Confiance de la détection acoustique (0..1 ; 0 si aucune piste). */
+  confidence: number;
+};
+
+/** Proximité d'un contact vis-à-vis des zones sensibles (GeoMCP). */
+export type AreaProximityReport = {
+  contactId: string;
+  nearestAreaId?: string;
+  nearestAreaLabel?: string;
+  /** Distance au bord de la zone la plus proche (unités carte ; <0 = à l'intérieur). */
+  distanceToEdgeUnits: number;
+  isInside: boolean;
+  isNear: boolean;
+};
 
 /** Cohérence : un classificationHint peut décrire une catégorie de contact. */
 export type ClassifiableCategory = Extract<

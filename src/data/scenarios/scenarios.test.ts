@@ -1,16 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { SCENARIOS, getScenario, listScenarioMeta } from "./index";
 
-describe("scénarios V1", () => {
-  it("expose exactement 3 scénarios avec des identifiants uniques", () => {
-    expect(SCENARIOS).toHaveLength(3);
+/** Nombre de scénarios attendus (3 V1 + 5 V2). */
+const EXPECTED_SCENARIO_COUNT = 8;
+
+describe("catalogue de scénarios", () => {
+  it("expose tous les scénarios avec des identifiants uniques", () => {
+    expect(SCENARIOS).toHaveLength(EXPECTED_SCENARIO_COUNT);
     const ids = SCENARIOS.map((s) => s.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
   it("listScenarioMeta renvoie une carte allégée par scénario", () => {
     const meta = listScenarioMeta();
-    expect(meta).toHaveLength(3);
+    expect(meta).toHaveLength(EXPECTED_SCENARIO_COUNT);
     for (const m of meta) {
       expect(m.title.length).toBeGreaterThan(0);
       expect(m.objective.length).toBeGreaterThan(0);

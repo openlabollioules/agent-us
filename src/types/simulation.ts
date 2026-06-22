@@ -1,11 +1,15 @@
 import type {
+  AcousticContact,
   Affiliation,
   AnomalyType,
+  BehaviorProfile,
   ContactCategory,
   ContactFlag,
   PlayerDiagnosis,
+  SensitiveArea,
   TacticalEvent,
   Vec2,
+  WeatherState,
 } from "./tactical";
 
 export type ScenarioDifficulty = "beginner" | "intermediate" | "expert";
@@ -54,11 +58,29 @@ export type ContactEffect = {
 };
 
 /**
+ * Effet scénarisé sur le contexte d'environnement V2 (météo, acoustique,
+ * comportement). Comme `ContactEffect`, 100% déterministe et data-driven.
+ * `set_behavior` fait un upsert par `contactId`.
+ */
+export type WorldEffect =
+  | { kind: "set_weather"; weather: WeatherState }
+  | { kind: "add_acoustic"; contact: AcousticContact }
+  | {
+      kind: "update_acoustic";
+      id: string;
+      patch: Partial<Omit<AcousticContact, "id">>;
+    }
+  | { kind: "remove_acoustic"; id: string }
+  | { kind: "set_behavior"; profile: BehaviorProfile };
+
+/**
  * Événement de la timeline d'un scénario : la partie publique (`TacticalEvent`)
- * est exposée à l'UI/au ScenarioMCP, les `effects` mutent l'état tactique.
+ * est exposée à l'UI/au ScenarioMCP, les `effects` mutent les contacts et les
+ * `worldEffects` font évoluer le contexte d'environnement V2.
  */
 export type ScriptedEvent = TacticalEvent & {
   effects?: ContactEffect[];
+  worldEffects?: WorldEffect[];
 };
 
 export type ExpectedDiagnosis = {
@@ -78,6 +100,12 @@ export type ScenarioDefinition = ScenarioMeta & {
   pedagogicalGoals: string[];
   /** Explication métier/IA affichée au débrief. */
   debriefExplanation: string;
+
+  /* V2 — contexte d'environnement initial (facultatif : absent en V1). */
+  initialWeather?: WeatherState;
+  sensitiveAreas?: SensitiveArea[];
+  initialAcousticContacts?: AcousticContact[];
+  initialBehaviorProfiles?: BehaviorProfile[];
 };
 
 export type ScoreResult = {

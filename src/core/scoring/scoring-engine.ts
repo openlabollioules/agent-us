@@ -14,6 +14,11 @@ const USEFUL_SKILLS = new Set<string>([
   "estimate_threat_level",
   "detect_abnormal_trajectory",
   "estimate_confidence",
+  // V2 — nouveaux domaines.
+  "assess_weather_impact",
+  "classify_acoustic_contact",
+  "check_area_proximity",
+  "assess_behavior_pattern",
 ]);
 
 /** Seuil de réussite : bon contact ET bon type d'anomalie (40 + 30). */

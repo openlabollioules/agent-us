@@ -9,6 +9,11 @@ export { estimateConfidence } from "./estimate-confidence";
 export { estimateThreatLevel, suspicionLevel } from "./estimate-threat-level";
 export { suggestNextActions } from "./suggest-next-actions";
 export { generatePedagogicalExplanation } from "./generate-pedagogical-explanation";
+// V2 — nouveaux domaines.
+export { assessWeatherImpact } from "./assess-weather-impact";
+export { classifyAcousticContact } from "./classify-acoustic-contact";
+export { checkAreaProximity } from "./check-area-proximity";
+export { assessBehaviorPattern } from "./assess-behavior-pattern";
 
 /** Métadonnées des skills (pour l'UI et la doc). */
 export const SKILL_METADATA: Record<SkillName, { label: string; description: string }> = {
@@ -47,5 +52,21 @@ export const SKILL_METADATA: Record<SkillName, { label: string; description: str
   generate_pedagogical_explanation: {
     label: "Expliquer pédagogiquement",
     description: "Explique un concept en mots simples.",
+  },
+  assess_weather_impact: {
+    label: "Évaluer l'impact météo",
+    description: "Estime si la météo explique une anomalie capteur.",
+  },
+  classify_acoustic_contact: {
+    label: "Classer une piste acoustique",
+    description: "Interprète un relèvement et une classification acoustiques.",
+  },
+  check_area_proximity: {
+    label: "Vérifier la proximité d'une zone",
+    description: "Situe un contact par rapport aux zones sensibles.",
+  },
+  assess_behavior_pattern: {
+    label: "Évaluer le comportement",
+    description: "Interprète le profil de comportement d'un contact.",
   },
 };
