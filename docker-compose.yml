@@ -1,18 +1,21 @@
-# docker-compose.yml — runtime agentique Hermes pour Agent Us (mode gateway).
+# docker-compose.yml — Agent Us (build) + Hermes (gateway), une seule commande.
 #
-# Équivalent compose de la commande `docker run ... gateway run` (voir
-# hermes/README.md). Le LLM est DISTANT, exposé en local via un tunnel SSH ;
-# Hermes le joint depuis le conteneur via host.docker.internal.
+#   docker compose up --build
 #
-# Prérequis :
-#   1. Tunnel SSH vers le LLM distant :
-#        ssh -L 18000:127.0.0.1:8000 openlab@192.168.1.100
-#   2. Exporter une clé serveur :
-#        export HERMES_API_KEY=$(openssl rand -hex 32)
-#   3. docker compose up -d hermes
+# Démarre :
+#   - hermes    : runtime agentique (API OpenAI-compatible) sur :8642
+#   - agent-us  : l'application Next.js sur http://localhost:3000
 #
-# Côté Agent Us (.env.local) : LLM_PROVIDER=hermes, NEXT_PUBLIC_LLM_ENABLED=1,
-#   HERMES_BASE_URL=http://localhost:8642/v1, HERMES_API_KEY=<la même clé>.
+# Agent Us joint Hermes via le réseau interne (http://hermes:8642/v1) et lui
+# délègue la verbalisation des messages d'agents (repli déterministe si absent).
+#
+# Clé API partagée : HERMES_API_KEY (défaut de dev ci-dessous). Pour une vraie
+# clé : `export HERMES_API_KEY=$(openssl rand -hex 32)` avant `up`, ou la mettre
+# dans un fichier .env à côté de ce compose.
+#
+# LLM : Hermes a besoin d'atteindre un LLM (vLLM/OpenRouter) selon SA config
+# (~/DEV/hermes/data). Si le LLM est distant via tunnel SSH, le conteneur le
+# joint par host.docker.internal (ex. tunnel `ssh -L 18000:127.0.0.1:8000 ...`).
 
 services:
   hermes:
@@ -22,15 +25,36 @@ services:
     command: ["gateway", "run"]
     working_dir: /workspace
     ports:
-      - "127.0.0.1:8642:8642" # API server compatible OpenAI (localhost only)
+      - "127.0.0.1:8642:8642" # exposé en local pour debug (optionnel)
     environment:
       API_SERVER_ENABLED: "true"
       API_SERVER_HOST: "0.0.0.0"
-      # À définir avant `up` : export HERMES_API_KEY=$(openssl rand -hex 32)
-      API_SERVER_KEY: ${HERMES_API_KEY:?definir HERMES_API_KEY=$(openssl rand -hex 32)}
+      API_SERVER_KEY: ${HERMES_API_KEY:-agent-us-dev-key}
     volumes:
       - ${HOME}/DEV/hermes/data:/opt/data # mémoire persistante + skills
       - ${HOME}/DEV/hermes/workspace:/workspace # scratch
     extra_hosts:
-      # Permet au conteneur d'atteindre le tunnel SSH du LLM (localhost:18000 hôte)
       - "host.docker.internal:host-gateway"
+    networks: [agentus]
+
+  agent-us:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_LLM_ENABLED: "1"
+    container_name: agent-us
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      LLM_PROVIDER: hermes
+      HERMES_BASE_URL: http://hermes:8642/v1
+      HERMES_MODEL: hermes-agent
+      HERMES_API_KEY: ${HERMES_API_KEY:-agent-us-dev-key}
+    depends_on: [hermes]
+    networks: [agentus]
+
+networks:
+  agentus:
+    driver: bridge

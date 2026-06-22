@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Agent Us
 
-## Getting Started
+Serious game naval multi-agents (inspiré d'Among Us). Le cœur du jeu est
+déterministe ; un backend agentique **Hermes** (optionnel) verbalise les
+messages des agents.
 
-First, run the development server:
+## Démarrage (dev local)
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev   # http://localhost:3000  (mode déterministe par défaut)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Autres commandes : `npm run build`, `npm run lint`, `npm run typecheck`, `npm run test`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🐳 Lancer avec Docker (Agent Us + Hermes, une seule commande)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Prérequis : Docker + l'image `nousresearch/hermes-agent`. Si le LLM est distant,
+ouvrir d'abord le tunnel SSH (ex. `ssh -L 18000:127.0.0.1:8000 openlab@192.168.1.100`).
 
-## Learn More
+```bash
+docker compose up --build
+```
 
-To learn more about Next.js, take a look at the following resources:
+- **Agent Us** → http://localhost:3000
+- **Hermes** (API OpenAI-compatible) → http://localhost:8642 (interne : `hermes:8642`)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Agent Us délègue la verbalisation à Hermes via le réseau interne, avec **repli
+déterministe automatique** si Hermes n'est pas prêt.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Clé API partagée
 
-## Deploy on Vercel
+Par défaut, une clé de dev (`agent-us-dev-key`) est partagée entre les deux
+services. Pour une vraie clé :
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+export HERMES_API_KEY=$(openssl rand -hex 32)
+docker compose up --build
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+(ou placer `HERMES_API_KEY=...` dans un fichier `.env` à côté du `docker-compose.yml`.)
+
+### Volumes Hermes
+
+Hermes monte `~/DEV/hermes/data` (mémoire + skills, dont le bundle `agent-us`)
+et `~/DEV/hermes/workspace`, comme le lancement manuel. La config du LLM de
+Hermes (vLLM/OpenRouter) vit dans `~/DEV/hermes/data`.
+
+### Construire / lancer séparément
+
+```bash
+docker build -t agent-us:latest .          # image de l'app seule
+docker compose up --build agent-us         # app seule (sans hermes)
+```
+
+## Architecture
+
+- `src/core` : logique métier déterministe (simulation, MCP, skills, agents, scoring).
+- `src/components`, `src/store` : UI (Next.js App Router + Zustand).
+- `src/app/api` : routes serveur (simulation + `/api/llm/verbalize`).
+- `hermes/` : skills Hermes (`hermes/skills/`) + `sync-skills.sh`.
+
+Voir `hermes/README.md` pour brancher Hermes en détail.
