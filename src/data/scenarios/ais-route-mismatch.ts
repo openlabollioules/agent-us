@@ -35,6 +35,7 @@ export const aisRouteMismatch: ScenarioDefinition = {
     },
     {
       id: "C-100",
+      visual: { model: "fdi" },
       label: "Patrouilleur Vigie",
       category: "patrol_boat",
       affiliation: "friendly",

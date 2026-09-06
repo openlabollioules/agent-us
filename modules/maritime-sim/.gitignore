@@ -1,0 +1,15 @@
+node_modules/
+player/node_modules/
+player/dist/
+generated/
+unreal/Binaries/
+unreal/Intermediate/
+unreal/Saved/
+unreal/DerivedDataCache/
+unreal/Content/
+unreal/.vs/
+unreal/*.sln
+unreal/*.suo
+unreal/Platforms/
+packages/
+__pycache__/

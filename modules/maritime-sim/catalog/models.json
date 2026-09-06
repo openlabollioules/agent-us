@@ -1,0 +1,15 @@
+[
+  { "id": "fdi", "label": "FDI — classe Amiral Ronarc’h", "shape": "frigate", "sizeM": [120, 18, 25], "status": "blockout", "source": "https://www.naval-group.com/fr/la-france-commande-une-fregate-de-defense-et-dintervention-fdi-supplementaire-naval-group" },
+  { "id": "suffren", "label": "Barracuda — classe Suffren", "shape": "submarine", "sizeM": [95, 10, 15], "status": "blockout", "source": "https://www.naval-group.com/fr/naval-group" },
+  { "id": "seaquest-s", "label": "Seaquest S", "shape": "drone", "sizeM": [10, 3, 4], "status": "blockout", "source": "https://www.naval-group.com/en/drones" },
+  { "id": "seaquest-m", "label": "Seaquest M", "shape": "drone", "sizeM": [28, 7, 9], "status": "concept-blockout", "source": "https://www.naval-group.com/en/drones" },
+  { "id": "seaquest-l", "label": "Seaquest L", "shape": "drone", "sizeM": [60, 11, 14], "status": "concept-blockout", "source": "https://www.naval-group.com/en/drones" },
+  { "id": "seagent-m", "label": "Seagent M — sous-marin", "shape": "submarine", "sizeM": [6, 1.5, 1.5], "status": "concept-blockout", "source": "https://www.naval-group.com/en/drones" },
+  { "id": "seagent-xl", "label": "Seagent XL — sous-marin", "shape": "submarine", "sizeM": [16, 3, 4], "status": "concept-blockout", "source": "https://www.naval-group.com/en/drones" },
+  { "id": "france-libre", "label": "France Libre — PA-NG", "shape": "carrier", "sizeM": [300, 75, 55], "status": "concept-blockout", "source": "https://www.elysee.fr/emmanuel-macron/2026/03/18/france-libre-le-nom-du-nouveau-porte-avions-devoile-sur-le-site-naval-group-de-nantes-indret" },
+  { "id": "vsr700", "label": "VSR700 — Airbus", "shape": "helicopter", "sizeM": [6, 2, 3], "status": "blockout", "source": "https://www.airbus.com/en/products-services/defence/uas/vsr700" },
+  { "id": "cargo", "label": "Cargo fictif", "shape": "cargo", "sizeM": [160, 25, 25], "status": "blockout" },
+  { "id": "fishing", "label": "Pêcheur fictif", "shape": "fishing", "sizeM": [22, 6, 8], "status": "blockout" },
+  { "id": "patrol", "label": "Patrouilleur fictif", "shape": "frigate", "sizeM": [40, 8, 10], "status": "blockout" },
+  { "id": "uncertain", "label": "Piste incertaine — repère symbolique", "shape": "marker", "sizeM": [30, 30, 30], "status": "symbol" }
+]

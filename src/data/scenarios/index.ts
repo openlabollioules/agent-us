@@ -7,6 +7,7 @@ import { fishingVesselAmbiguous } from "./fishing-vessel-ambiguous";
 import { droneNearSensitiveArea } from "./drone-near-sensitive-area";
 import { submarineContact } from "./submarine-contact";
 import { dualAnomaly } from "./dual-anomaly";
+import { ganExercise } from "./gan-exercise";
 
 /** Tous les scénarios, dans l'ordre d'affichage (V1 puis V2). */
 export const SCENARIOS: ScenarioDefinition[] = [
@@ -20,6 +21,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
   droneNearSensitiveArea,
   submarineContact,
   dualAnomaly,
+  ganExercise,
 ];
 
 const SCENARIOS_BY_ID = new Map<string, ScenarioDefinition>(

@@ -126,6 +126,7 @@ export function createInitialState(
       id: seed.id,
       label: seed.label,
       category: seed.category,
+      ...(seed.visual ? { visual: seed.visual } : {}),
       affiliation: seed.affiliation,
       position: seed.position,
       speedKnots: seed.speedKnots,

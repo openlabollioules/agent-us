@@ -6,7 +6,8 @@ import type { TacticalEvent } from "@/types";
 import { useGameStore } from "@/store/game-store";
 import { getScenario } from "@/data/scenarios";
 import { STATUS_LABEL } from "@/components/ui-labels";
-import { TacticalMap, ContactDetailsPanel } from "@/components/tactical-map";
+import { ContactDetailsPanel } from "@/components/tactical-map";
+import { TacticalViewport } from "@/components/tactical-map/TacticalViewport";
 import { AgentConsole } from "@/components/agents/AgentConsole";
 import { ActionSuggestions } from "@/components/actions/ActionSuggestions";
 import { FreeInstructionInput } from "@/components/actions/FreeInstructionInput";
@@ -161,7 +162,7 @@ export function GameScreen() {
         {/* Colonne centrale : carte + instruction + diagnostic */}
         <div className="flex min-h-0 flex-col gap-3">
           <div className="min-h-0 flex-1">
-            <TacticalMap
+            <TacticalViewport
               state={state}
               selectedContactId={selectedContactId}
               onSelectContact={selectContact}

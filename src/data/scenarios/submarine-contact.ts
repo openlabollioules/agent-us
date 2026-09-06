@@ -38,6 +38,7 @@ export const submarineContact: ScenarioDefinition = {
     },
     {
       id: "C-440",
+      visual: { model: "suffren" },
       label: "Contact furtif",
       category: "submarine",
       affiliation: "unknown",

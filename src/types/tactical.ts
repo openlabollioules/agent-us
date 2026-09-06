@@ -5,6 +5,8 @@
  * IA ne font qu'interpréter cet état, ils n'inventent jamais de faits tactiques.
  */
 
+import type { ContactVisual } from "./visual";
+
 export type Vec2 = { x: number; y: number };
 
 export type ContactCategory =
@@ -46,6 +48,7 @@ export type ContactHistoryPoint = {
 };
 
 export type ContactTrack = {
+  visual?: ContactVisual;
   id: string;
   label: string;
   category: ContactCategory;

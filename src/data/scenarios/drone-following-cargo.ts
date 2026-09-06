@@ -35,6 +35,7 @@ export const droneFollowingCargo: ScenarioDefinition = {
     },
     {
       id: "C-042",
+      visual: { model: "seaquest-s" },
       label: "Contact inconnu",
       category: "usv_drone",
       affiliation: "unknown",

@@ -49,3 +49,33 @@ next-env.d.ts
 
 # OS
 Thumbs.db
+
+# Module Unreal maritime-sim : sources, protocol, catalogues et scripts restent suivis.
+# Les dépendances, maillages générés, assets importés, caches et packages binaires ne
+# doivent pas être ajoutés au dépôt.
+/modules/maritime-sim/node_modules/
+/modules/maritime-sim/player/node_modules/
+/modules/maritime-sim/player/dist/
+/modules/maritime-sim/generated/
+/modules/maritime-sim/packages/
+/modules/maritime-sim/build-full.log
+/modules/maritime-sim/unreal/Binaries/
+/modules/maritime-sim/unreal/DerivedDataCache/
+/modules/maritime-sim/unreal/Intermediate/
+/modules/maritime-sim/unreal/Saved/
+/modules/maritime-sim/unreal/Content/
+/modules/maritime-sim/unreal/Build/
+/modules/maritime-sim/unreal/.vs/
+/modules/maritime-sim/unreal/*.sln
+/modules/maritime-sim/unreal/*.suo
+# Certaines générations locales utilisent un dossier versionné avec la version UE
+# dans son nom (par exemple `unreal 5.8`). Le joker couvre aussi les futures versions.
+/modules/maritime-sim/unreal */Binaries/
+/modules/maritime-sim/unreal */DerivedDataCache/
+/modules/maritime-sim/unreal */Intermediate/
+/modules/maritime-sim/unreal */Saved/
+/modules/maritime-sim/unreal */Content/
+/modules/maritime-sim/unreal */Build/
+/modules/maritime-sim/unreal */.vs/
+/modules/maritime-sim/unreal */*.sln
+/modules/maritime-sim/unreal */*.suo

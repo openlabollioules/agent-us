@@ -39,6 +39,7 @@ export const dualAnomaly: ScenarioDefinition = {
     },
     {
       id: "C-520",
+      visual: { model: "seaquest-s" },
       label: "Suiveur",
       category: "usv_drone",
       affiliation: "unknown",

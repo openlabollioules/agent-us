@@ -1,0 +1,16 @@
+# Références visuelles publiques — consultation du 6 septembre 2026
+
+Ces liens servent à une étude de silhouette. Ils ne fournissent ni plans de construction ni licence de réutilisation des photographies. Le catalogue contient des approximations graphiques originales, avec proportions fictives, pas des modèles validés par Naval Group ou Airbus.
+
+| Famille | Référence primaire | Indications visuelles à vérifier lors du travail artistique |
+| --- | --- | --- |
+| FDI / Amiral Ronarc’h | [Naval Group — programme FDI](https://www.naval-group.com/fr/la-france-commande-une-fregate-de-defense-et-dintervention-fdi-supplementaire-naval-group) | Coque, étrave inversée caractéristique, superstructures angulaires, mât intégré, hangar et pont arrière. Le blockout n’en restitue pas fidèlement tous les détails. |
+| Suffren / Barracuda | [Naval Group — lancement du Tourville, PDF avec illustration](https://www.naval-group.com/sites/default/files/2023-07/CP_20230720_Naval%20Group%20lance%20le%20sous-marin%20nucl%C3%A9aire%20d%E2%80%99attaque%20Tourville.pdf) | Corps profilé, massif, raccordements et surfaces extérieures. Aucune donnée de signature ou performance dans la simulation. |
+| Seaquest S, M, L | [Naval Group — drones](https://www.naval-group.com/en/drones) | Gamme de surface ; S pour les petits contacts des scénarios, M/L dans la galerie et l’exercice GAN. Les M/L sont traités comme concepts illustratifs. |
+| Seagent M, XL | [Naval Group — drones](https://www.naval-group.com/en/drones) | Gamme sous-marine distincte de Seaquest. Ne pas baptiser le XL sous-marin « Seaquest XL » sans source confirmant cette désignation. |
+| France Libre / PA-NG | [Élysée — annonce du nom, 18 mars 2026](https://www.elysee.fr/emmanuel-macron/2026/03/18/france-libre-le-nom-du-nouveau-porte-avions-devoile-sur-le-site-naval-group-de-nantes-indret) ; [ministère — présentation du programme](https://www.defense.gouv.fr/actualites/france-libre-preparer-puissance-aeronavale-cinquante-prochaines-annees) | Projet futur : toute géométrie reste une interprétation de concept, pas une représentation de bâtiment achevé. |
+| VSR700 | [Airbus — page produit et photographies](https://www.airbus.com/en/products-services/defence/uas/vsr700) | Fuselage compact, patins, poutre arrière et rotor. Le lien actuel peut afficher une évolution du nom commercial ; le catalogue conserve VSR700 demandé pour l’exercice. |
+
+Images de référence directement accessibles depuis la page drones Naval Group : [vue Seagent XL](https://www.naval-group.com/sites/default/files/styles/default_landscape_small_fallback/public/2026-04/1167_NG_DRONE_SEAGENT-XL.png?itok=F-1uwBmR), [concept Seaquest M/L](https://www.naval-group.com/sites/default/files/styles/default_landscape_small_fallback/public/2026-04/NG_SEAQUEST_ML_0.png?itok=aZIZwSOc). Elles restent hébergées par leur ayant droit.
+
+Pour une validation de fidélité, constituer pour chaque modèle une planche de vues autorisées (profil, face, arrière, trois-quarts, dessus lorsque disponible), puis comparer silhouette, superstructures et matériaux à des captures Unreal prises avec des focales connues. Consigner les zones non documentées au lieu d’inventer une géométrie présentée comme exacte. Le présent dépôt n’a pas encore fait l’objet de cette validation artistique.

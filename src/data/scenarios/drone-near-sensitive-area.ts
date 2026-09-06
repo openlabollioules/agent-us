@@ -25,6 +25,7 @@ export const droneNearSensitiveArea: ScenarioDefinition = {
   initialContacts: [
     {
       id: "C-301",
+      visual: { model: "fdi" },
       label: "Veilleur côtier",
       category: "patrol_boat",
       affiliation: "friendly",
@@ -38,6 +39,7 @@ export const droneNearSensitiveArea: ScenarioDefinition = {
     },
     {
       id: "C-330",
+      visual: { model: "seaquest-s" },
       label: "Micro-contact",
       category: "usv_drone",
       affiliation: "unknown",

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { SCENARIOS, getScenario, listScenarioMeta } from "./index";
 
-/** Nombre de scénarios attendus (3 V1 + 5 V2). */
-const EXPECTED_SCENARIO_COUNT = 8;
+/** 3 V1 + 5 V2 + exercice GAN. */
+const EXPECTED_SCENARIO_COUNT = 9;
 
 describe("catalogue de scénarios", () => {
   it("expose tous les scénarios avec des identifiants uniques", () => {

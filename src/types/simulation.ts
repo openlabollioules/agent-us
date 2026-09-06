@@ -1,3 +1,4 @@
+import type { ContactVisual } from "./visual";
 import type {
   AcousticContact,
   Affiliation,
@@ -24,6 +25,7 @@ export type ScenarioMeta = {
 
 /** Contact tel que défini au départ d'un scénario (avant déroulé du moteur). */
 export type ContactSeed = {
+  visual?: ContactVisual;
   id: string;
   label: string;
   category: ContactCategory;
