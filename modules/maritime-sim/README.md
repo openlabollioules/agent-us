@@ -2,18 +2,18 @@
 
 Ce répertoire peut être copié hors d’Agent Us. Il contient un projet **Unreal Engine 5.8 C++**, une passerelle HTTP Node 24, un lecteur Pixel Streaming et un contrat de scène Zod versionné. Le moteur est un **visualiseur**, pas une deuxième simulation : il n’avance jamais les mobiles ni les tours.
 
-**État de livraison : prototype d’intégration, pas simulation ultra-réaliste achevée.** Les sources C++, la génération/importation d’assets et les scripts de packaging sont fournis. Aucun binaire Unreal n’est livré ; la compilation native, l’import dans l’éditeur, le streaming depuis un GPU et les performances Windows/Linux restent à valider. Les modèles sont des *blockouts* originaux (silhouettes d’étude), pas des reproductions fidèles. Les dimensions du catalogue sont des choix graphiques fictifs.
+**État : intégration fonctionnelle et révision visuelle 2, finition photoréaliste encore à poursuivre.** Le lancement de la vue 3D depuis Agent Us a été testé avec succès par l'utilisateur sous Windows. Les neuf modèles principaux sont des reconstructions extérieures originales à partir d'images publiques ; les concepts futurs sont identifiés comme tels. Les sources et procédures d'import sont fournies, les assets et exécutables générés restent locaux. La fidélité de tous les détails et les performances Windows/Linux ne sont pas certifiées.
 
 ## Ce qui est implémenté
 
 - Contrat `maritime-scene/1` : contacts, positions, caps, historique visible, relations, zones, cadrage et environnement.
 - Basculement Agent Us 2D/3D ; module facultatif ; repli 2D sur perte du moteur, échec de synchronisation ou absence de vidéo.
 - Caméra orbitale, zoom, altitude, immersion, sélection du contact à cadrer et cadrage automatique.
-- Rendu natif : meshes remplaçables, ciel atmosphérique, soleil, brouillard volumétrique, mer à déplacement sinusoïdal, fond et côtes stylisés, repères et trajectoires.
+- Rendu natif : meshes remplaçables, matériaux PBR, ciel atmosphérique, soleil, nuages volumétriques, brouillard, Single Layer Water, relief côtier et fond marin fictifs, repères et trajectoires.
 - État météo traduit en hauteur de vague et visibilité ; soleil configurable par la scène indépendante. Dans Agent Us, la hauteur du soleil reste à 35° car les scénarios ne définissent pas d’heure réelle.
 - Galerie autonome : FDI, Suffren, Seaquest S/M/L, Seagent M/XL, France Libre, VSR700, cargo, pêcheur, patrouilleur.
 
-L’océan fourni est opaque à double face, sans réfraction, écume, sillage ni modèle hydrodynamique. Le rendu sous-marin utilise une teinte et du brouillard, sans bathymétrie réelle. Pluie détaillée, nuages volumétriques artistiques, son, mouvements de coque et rotor, textures PBR et modèles de production restent à réaliser. Les vagues suivent le temps de scène et restent figées entre deux tours ; seule la caméra s’anime. Aucune donnée de performance militaire ni fonction d’armement.
+La mer possède un matériau volumique d'eau et des vagues cosmétiques continues entre les tours. Le rendu sous-marin conserve pour l'instant la teinte et le brouillard du visualiseur. Écume, sillages, pluie détaillée, son, mouvements des coques/rotors et finition des textures par un artiste restent à réaliser. Aucun calcul hydrodynamique ni paramètre de performance militaire n'est ajouté.
 
 ## Architecture
 
@@ -152,11 +152,56 @@ Un autre simulateur peut publier directement des snapshots validés par `protoco
 
 ## Assets et fidélité visuelle
 
-Le [catalogue](catalog/models.json) identifie les silhouettes, leurs dimensions **illustratives** et les sources de référence. Les [références visuelles](catalog/REFERENCES.md) distinguent matériel présenté publiquement, concepts futurs et limites de reproduction.
+La **révision visuelle 2** reprend les neuf modèles FDI, Suffren, Seaquest S/M/L, Seagent M/XL, France Libre et VSR700 à partir d'images publiques. Coques lissées, superstructures, vitrages individuels, garde-corps, hangar, ponts marqués et carénages remplacent les volumes primitifs de ces modèles. Les trois bateaux civils restent des silhouettes simples. Le [catalogue](catalog/models.json) distingue cotes extérieures publiées et dimensions estimées ; les [références](catalog/REFERENCES.md) précisent les observations et les parties non documentées.
 
-`node scripts/generate-models.mjs` produit 16 OBJ et un MTL dans `generated/`. `setup_unreal.py` les importe en `/Game/Maritime/Models/SM_<id>`, avec tirets remplacés par underscores. Les matériaux et la carte sont également générés. Les fichiers dérivés sont ignorés par Git ; ils sont reproductibles depuis le code. Le script **n’écrase pas un asset existant** : les remplacements artistiques restent intacts. Pour régénérer un seul asset d’étude, le supprimer explicitement dans l’éditeur puis relancer le script.
+`node scripts/generate-models.mjs` produit 16 OBJ, un MTL et un rapport de géométrie dans `generated/`. `setup_unreal.py` les importe en `/Game/Maritime/Models/SM_<id>`, avec tirets remplacés par underscores, puis attribue les matériaux PBR par nom de slot. Les sources sont dans `scripts/visuals/`. Les fichiers dérivés restent ignorés par Git.
 
-Pour atteindre la fidélité demandée, remplacer chaque `SM_<id>` par un mesh d’artiste autorisé conservant l’origine à la flottaison (centre pour les sous-marins), +X vers l’étrave, +Z vertical, échelle en centimètres. Importer les UV, matériaux PBR et LOD ; régler Nanite par asset selon sa compatibilité, puis refaire le packaging. Les noms stables évitent toute modification de la passerelle. Les éléments fonctionnels d’armement restent absents. Les photographies publiques ne sont pas redistribuées dans le module ; obtenir les droits nécessaires pour des textures dérivées ou un modèle tiers.
+Le rendu utilise des peintures diélectriques, un pont rugueux, des métaux distincts, du vitrage réfléchissant et un revêtement sombre légèrement irrégulier. La mer utilise **Single Layer Water**, avec absorption/diffusion, normales de vagues filtrées selon la distance et houle de faible fréquence. Son animation est cosmétique et n'avance aucun tour. Le relief côtier et le fond marin sont continus et fictifs ; une couche de nuages volumétriques est ajoutée à Ocean. Les valeurs météo du jeu restent inchangées ; les nuages sont pour l'instant une ambiance fixe.
+
+### Mettre à jour une installation existante
+
+Fermer la session Unreal du projet avant l'import. Depuis la racine Agent Us, sous Windows 11 :
+
+```powershell
+./modules/maritime-sim/scripts/update-visuals.ps1 -EngineRoot 'G:/Program Files/Epic Games/UE_5.8'
+```
+
+Adapter le chemin du moteur. Pour la copie créée par l'éditeur dans un dossier avec espace, ajouter `-Project 'G:/DEV/agent-us/modules/maritime-sim/unreal 5.8/MaritimeSim.uproject'`. Utiliser le même projet pour l'import, le lancement et le packaging.
+
+Sous Ubuntu 24.04 ou 26.04 avec UE installé :
+
+```bash
+export UE_ROOT=/opt/UnrealEngine-5.8
+bash modules/maritime-sim/scripts/update-visuals.sh
+# Autre projet : passer son chemin .uproject comme premier argument.
+```
+
+Cette commande active explicitement `MARITIME_REIMPORT=1`. Les anciens meshes, matériaux remplacés et la carte sont copiés une fois dans `/Game/Maritime/BackupBeforeExteriorV2/`. Une relance conserve cette première sauvegarde. Sans cette option, l'installation habituelle conserve les assets existants. Pour revenir en arrière, remplacer dans l'éditeur les assets concernés par leurs copies de sauvegarde en conservant les noms et emplacements d'origine.
+
+Si le lecteur utilise une application dans `packages/Win64` ou `packages/Linux`, **refaire le packaging** avec les commandes d'installation précédentes : un exécutable déjà packagé conserve ses anciens assets. Le lancement depuis `UnrealEditor.exe <projet> -game` utilise directement les assets réimportés.
+
+### Contrôler les modèles dans Unreal
+
+L'inspection est indépendante d'Agent Us et n'écrit pas dans Ocean :
+
+```powershell
+./modules/maritime-sim/scripts/render-lookdev.ps1 -EngineRoot 'G:/Program Files/Epic Games/UE_5.8'
+```
+
+Équivalent Linux :
+
+```bash
+"$UE_ROOT/Engine/Binaries/Linux/UnrealEditor-Cmd" \
+  "$PWD/modules/maritime-sim/unreal/MaritimeSim.uproject" \
+  "-ExecutePythonScript=$PWD/modules/maritime-sim/scripts/render-lookdev.py" \
+  -RenderOffscreen -unattended -nosplash
+```
+
+Les captures et leurs caméras sont dans `generated/lookdev/`. Les sous-marins sont présentés hors de l'eau pour examiner toute leur silhouette. Cette inspection ne mesure pas les performances et ne valide pas, à elle seule, le fonctionnement interactif sous Linux.
+
+La révision 2 reste une **reconstruction visuelle à affiner**, pas une reproduction industrielle ni une photogrammétrie certifiée. Des vues rapprochées supplémentaires, une finition artistique des UV et textures, les embruns/sillages, les transitions sous-marines et une validation systématique des détails restent nécessaires pour qualifier le résultat d'ultra réaliste. Les concepts futurs restent explicitement identifiés. Aucun intérieur, système d'armement ou paramètre tactique réel n'est ajouté.
+
+Un artiste peut toujours remplacer `SM_<id>` en conservant l'origine à la flottaison (centre pour les sous-marins), +X vers l'étrave, +Z vertical et les centimètres Unreal. Les noms stables permettent de poursuivre la finition sans modifier Agent Us, ses scénarios ou le contrat de scène.
 
 ## Vérification
 
@@ -169,6 +214,7 @@ npm run lint
 npm run test
 npm run build
 node --test modules/maritime-sim/bridge/server.test.mjs
+node --test modules/maritime-sim/scripts/visuals/geometry.test.mjs
 npm --prefix modules/maritime-sim/player run build
 ```
 

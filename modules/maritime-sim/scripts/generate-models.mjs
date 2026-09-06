@@ -1,16 +1,18 @@
 import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
+import { detailedModel } from "./visuals/fleet.mjs";
+import { terrain } from "./visuals/terrain.mjs";
 
-// Original, procedural study meshes. All dimensions are illustrative, NOT plans.
+// Original exterior reconstructions from public imagery; see catalog/REFERENCES.md.
 export class Mesh {
   vertices = [];
   faces = [];
-  add(vertices, faces, material = "steel") {
+  add(vertices, faces, material = "steel", smooth = false) {
     const offset = this.vertices.length;
     this.vertices.push(...vertices);
     for (const face of faces) {
       for (let i = 1; i < face.length - 1; i++)
-        this.faces.push({ indices: [face[0], face[i], face[i + 1]].map((v) => v + offset), material });
+        this.faces.push({ indices: [face[0], face[i], face[i + 1]].map((v) => v + offset), material, smooth });
     }
   }
   box(x, y, z, length, width, height, material = "steel", taper = 1) {
@@ -37,7 +39,7 @@ export class Mesh {
     }
     faces.push(Array.from({ length: sides }, (_, j) => sides-1-j));
     faces.push(Array.from({ length: sides }, (_, j) => rings*sides+j));
-    this.add(vertices, faces, material);
+    this.add(vertices, faces, material, true);
   }
   hull(length, width, deck, draft) {
     const stations = [[-.5,.65],[-.45,.93],[-.3,1],[-.1,1],[.1,.97],[.3,.8],[.43,.4],[.5,.025]];
@@ -52,24 +54,37 @@ export class Mesh {
     this.add(vertices, faces, "steel");
   }
   obj() {
-    const lines = ["# Original illustrative mesh; centimetres, +X bow, +Z up", "mtllib maritime.mtl"];
+    const lines = ["# Original exterior reconstruction; centimetres, +X bow, +Z up", "mtllib maritime.mtl"];
+    const normals = this.vertices.map(() => [0,0,0]);
+    const faceNormals = this.faces.map((face) => {
+      const [a,b,c] = face.indices.map((i) => this.vertices[i]);
+      const u = b.map((n,i) => n-a[i]), v = c.map((n,i) => n-a[i]);
+      const n = [u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+      if (face.smooth) for (const id of face.indices) for (let k=0;k<3;k++) normals[id][k] += n[k];
+      return n;
+    });
     for (const v of this.vertices) lines.push(`v ${v.map((n) => (n*100).toFixed(5)).join(" ")}`);
     // Each flat triangle gets a non-degenerate planar UV projection and a normal.
-    for (const face of this.faces) {
+    for (const [index,face] of this.faces.entries()) {
       const [a,b,c] = face.indices.map((i) => this.vertices[i]);
       const u = b.map((v,i) => v-a[i]), v = c.map((n,i) => n-a[i]);
       const normal = [u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
-      const size = Math.hypot(...normal);
       const dominant = normal.map(Math.abs).indexOf(Math.max(...normal.map(Math.abs)));
       const axes = [0,1,2].filter((axis) => axis !== dominant);
       for (const point of [a,b,c]) lines.push(`vt ${(point[axes[0]]/10).toFixed(6)} ${(point[axes[1]]/10).toFixed(6)}`);
-      lines.push(`vn ${normal.map((n) => (n/size).toFixed(8)).join(" ")}`);
+      for (const id of face.indices) {
+        const n = face.smooth ? normals[id] : faceNormals[index];
+        const size = Math.hypot(...n);
+        if (size < 1e-15) throw new Error(`Invalid normal at triangle ${index}`);
+        lines.push(`vn ${n.map((v) => (v/size).toFixed(8)).join(" ")}`);
+      }
     }
-    lines.push("s off");
     let material = "";
+    let smoothing = null;
     for (const [index,face] of this.faces.entries()) {
       if (material !== face.material) { material = face.material; lines.push(`usemtl ${material}`); }
-      lines.push(`f ${face.indices.map((i,j) => `${i+1}/${index*3+j+1}/${index+1}`).join(" ")}`);
+      if (smoothing !== face.smooth) { smoothing=face.smooth; lines.push(`s ${smoothing?1:"off"}`); }
+      lines.push(`f ${face.indices.map((i,j) => `${i+1}/${index*3+j+1}/${index*3+j+1}`).join(" ")}`);
     }
     return lines.join("\n") + "\n";
   }
@@ -77,6 +92,7 @@ export class Mesh {
 
 export function buildModel(model) {
   const m = new Mesh();
+  if (detailedModel(m, model)) return m;
   const [l,w,h] = model.sizeM;
   if (model.shape === "marker") {
     m.add([[0,0,15],[0,0,-15],[15,0,0],[0,15,0],[-15,0,0],[0,-15,0]],
@@ -161,30 +177,19 @@ export async function generate() {
   await mkdir(output,{recursive:true});
   const catalog = JSON.parse(await readFile(new URL("../catalog/models.json",import.meta.url),"utf8"));
   const models = catalog.map((model) => [model.id.replaceAll("-","_"),buildModel(model)]);
-  models.push(["ocean",grid(30000,256,0,"water")], ["seabed",grid(30000,1,-300,"sand")]);
-  const coast = new Mesh();
-  // Stylised land in the same NE / SW / SE sectors as the tactical SVG.
-  for (const polygon of [
-    [[1000,0],[1000,300],[940,285],[880,220],[900,165],[915,120],[860,70],[760,62],[700,57],[652,0]],
-    [[0,1000],[0,715],[95,710],[152,758],[172,832],[188,892],[128,952]],
-    [[1000,1000],[1000,818],[928,840],[898,902],[920,958],[970,996]],
-  ]) {
-    const vertices = polygon.map(([x,y])=>[(x-500)*10,(y-500)*10,12]);
-    // Top polygon ordering corrected to face up; cliff walls reach the seabed.
-    const area = polygon.reduce((sum,p,i)=>sum+p[0]*polygon[(i+1)%polygon.length][1]-polygon[(i+1)%polygon.length][0]*p[1],0);
-    const face = vertices.map((_,i)=>i);
-    coast.add(vertices,[area>0?face:face.reverse()],"land");
-    for(let i=0;i<vertices.length;i++) {
-      const a=vertices[i],b=vertices[(i+1)%vertices.length];
-      coast.add([a,b,[b[0],b[1],-300],[a[0],a[1],-300]],[[0,1,2,3]],"sand");
-    }
-  }
-  models.push(["coast",coast]);
+  models.push(["ocean",grid(30000,256,0,"water")]);
+  models.push(...terrain(Mesh));
   const colors = { steel:[.42,.48,.52],dark:[.055,.075,.085],glass:[.035,.12,.16],deck:[.14,.17,.18],
-    white:[.8,.83,.8],container:[.38,.17,.11],signal:[.1,.8,1],water:[.015,.16,.22],sand:[.2,.18,.11],land:[.12,.25,.15] };
+    white:[.8,.83,.8],container:[.38,.17,.11],signal:[.1,.8,1],water:[.015,.16,.22],sand:[.2,.18,.11],land:[.12,.25,.15],
+    hull:[.38,.42,.44],paint:[.46,.49,.5],rubber:[.025,.031,.034],panel:[.26,.28,.29],metal:[.36,.38,.4],
+    antifouling:[.13,.038,.026],yellow:[.72,.48,.075],red:[.5,.022,.015],green:[.02,.3,.09],rock:[.27,.25,.21] };
   await writeFile(new URL("maritime.mtl",output),Object.entries(colors).map(([id,rgb])=>
     `newmtl ${id}\nKd ${rgb.join(" ")}\nKs 0.3 0.3 0.3\nNs 60\n`).join("\n"));
   for (const [id,mesh] of models) await writeFile(new URL(`SM_${id}.obj`,output),mesh.obj());
-  console.log(`Generated ${models.length} original study meshes in ${output.pathname}`);
+  await writeFile(new URL("mesh-report.json",output), JSON.stringify(Object.fromEntries(models.map(([id,m]) => [id, {
+    vertices: m.vertices.length, triangles: m.faces.length, materials: [...new Set(m.faces.map(f=>f.material))],
+    boundsM: [0,1,2].map(k => { let lo=Infinity, hi=-Infinity; for(const v of m.vertices){lo=Math.min(lo,v[k]);hi=Math.max(hi,v[k]);} return [lo,hi]; }),
+  }])),null,2));
+  console.log(`Generated ${models.length} meshes; geometry statistics: generated/mesh-report.json`);
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await generate();

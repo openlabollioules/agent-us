@@ -1,13 +1,17 @@
 """Run inside UE 5.8 Editor with -ExecutePythonScript=<absolute path>.
 
-Creates only missing generated assets. Existing artist replacements are preserved.
-The files are derived study meshes, not faithful production models.
+Creates missing assets; MARITIME_REIMPORT=1 explicitly upgrades generated visuals
+after backing up existing meshes/materials. Gameplay and scene protocol unchanged.
 """
 from pathlib import Path
 import os
+import sys
 import unreal as ue
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts" / "visuals"))
+import materials as visual_materials
+import environment as visual_environment
 ASSET_ROOT = "/Game/Maritime"
 tools = ue.AssetToolsHelpers.get_asset_tools()
 edit = ue.MaterialEditingLibrary
@@ -94,10 +98,16 @@ def main():
         raise RuntimeError("Run node scripts/generate-models.mjs before the editor setup")
     for folder in ["Models", "Materials", "Maps"]:
         ue.EditorAssetLibrary.make_directory(ASSET_ROOT + "/" + folder)
+    replace = os.environ.get("MARITIME_REIMPORT") == "1"
+    surfaces = visual_materials.build(replace)
     for source in inputs:
+        if os.environ.get("MARITIME_MATERIALS_ONLY") == "1":
+            continue
         target = ASSET_ROOT + "/Models/" + source.stem
         if ue.EditorAssetLibrary.does_asset_exist(target) and os.environ.get("MARITIME_REIMPORT") != "1":
             continue
+        if replace:
+            visual_materials.backup(target)
         task = ue.AssetImportTask()
         task.filename = str(source)
         task.destination_path = ASSET_ROOT + "/Models"
@@ -121,6 +131,10 @@ def main():
         tools.import_asset_tasks([task])
         if not ue.EditorAssetLibrary.does_asset_exist(target):
             raise RuntimeError("Import failed: " + target)
+        mesh = ue.load_asset(target)
+        visual_materials.assign(mesh, surfaces)
+        ue.EditorAssetLibrary.set_metadata_tag(mesh, "MaritimeVisualVersion", visual_materials.VERSION)
+        ue.EditorAssetLibrary.save_loaded_asset(mesh)
     build_materials()
     map_path = ASSET_ROOT + "/Maps/Ocean"
     if not ue.EditorAssetLibrary.does_asset_exist(map_path):
@@ -128,8 +142,11 @@ def main():
         if not subsystem.new_level(map_path):
             raise RuntimeError("Cannot create ocean map")
         subsystem.save_current_level()
+    if replace:
+        visual_materials.backup(map_path)
+    visual_environment.install(map_path)
     ue.EditorAssetLibrary.save_directory(ASSET_ROOT)
-    ue.log("Maritime Sim assets created. Open Ocean and Play. Native build and visual checks required.")
+    ue.log("Maritime exterior v2 imported. Existing assets backed up when upgrading. Open Ocean and Play.")
 
 
 main()
