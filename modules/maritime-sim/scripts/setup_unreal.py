@@ -1,11 +1,13 @@
 """Run inside UE 5.8 Editor with -ExecutePythonScript=<absolute path>.
 
-Creates missing assets; MARITIME_REIMPORT=1 explicitly upgrades generated visuals
-after backing up existing meshes/materials. Gameplay and scene protocol unchanged.
+Updates generated assets when their source fingerprints change;
+MARITIME_REIMPORT=1 forces rebuilding after backing up meshes/materials. Gameplay and scene protocol unchanged.
 """
 from pathlib import Path
 import os
 import sys
+import hashlib
+import json
 import unreal as ue
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -28,11 +30,6 @@ def constant(material, value):
     return expression(material, ue.MaterialExpressionConstant, r=value)
 
 
-def connect(source, dest, pin):
-    if not edit.connect_material_expressions(source, "", dest, pin):
-        raise RuntimeError("Cannot connect material expression: " + pin)
-
-
 def material(name, color, roughness=0.5, emissive=False):
     path = ASSET_ROOT + "/Materials/" + name
     if ue.EditorAssetLibrary.does_asset_exist(path):
@@ -47,45 +44,6 @@ def material(name, color, roughness=0.5, emissive=False):
 
 
 def build_materials():
-    ocean, fresh = material("M_Ocean", (0.012, 0.09, 0.13), 0.14)
-    if fresh:
-        ocean.set_editor_property("two_sided", True)
-        position = expression(ocean, ue.MaterialExpressionWorldPosition)
-        time = expression(ocean, ue.MaterialExpressionScalarParameter,
-                          parameter_name="SceneTime", default_value=0.0)
-        height = expression(ocean, ue.MaterialExpressionScalarParameter,
-                            parameter_name="WaveHeight", default_value=50.0)
-        waves = []
-        for direction, wavelength, speed, amplitude in [((1, 0.3, 0), 16000., 0.12, 0.3),
-                                                       ((0.3, 1, 0), 7500., 0.18, 0.14),
-                                                       ((0.8, -0.6, 0), 3500., 0.24, 0.06)]:
-            vector = expression(ocean, ue.MaterialExpressionConstant3Vector,
-                                constant=ue.LinearColor(*direction, 1))
-            dot = expression(ocean, ue.MaterialExpressionDotProduct)
-            connect(position, dot, "A"); connect(vector, dot, "B")
-            scale = expression(ocean, ue.MaterialExpressionDivide)
-            connect(dot, scale, "A"); connect(constant(ocean, wavelength), scale, "B")
-            phase = expression(ocean, ue.MaterialExpressionMultiply)
-            connect(time, phase, "A"); connect(constant(ocean, speed), phase, "B")
-            total = expression(ocean, ue.MaterialExpressionAdd)
-            connect(scale, total, "A"); connect(phase, total, "B")
-            sine = expression(ocean, ue.MaterialExpressionSine)
-            connect(total, sine, "")
-            weighted = expression(ocean, ue.MaterialExpressionMultiply)
-            connect(sine, weighted, "A"); connect(constant(ocean, amplitude), weighted, "B")
-            waves.append(weighted)
-        summed = waves[0]
-        for wave in waves[1:]:
-            node = expression(ocean, ue.MaterialExpressionAdd)
-            connect(summed, node, "A"); connect(wave, node, "B"); summed = node
-        displacement = expression(ocean, ue.MaterialExpressionMultiply)
-        connect(summed, displacement, "A"); connect(height, displacement, "B")
-        up = expression(ocean, ue.MaterialExpressionConstant3Vector, constant=ue.LinearColor(0, 0, 1, 1))
-        offset = expression(ocean, ue.MaterialExpressionMultiply)
-        connect(displacement, offset, "A"); connect(up, offset, "B")
-        edit.connect_material_property(offset, "", ue.MaterialProperty.MP_WORLD_POSITION_OFFSET)
-        edit.recompile_material(ocean)
-        ue.EditorAssetLibrary.save_loaded_asset(ocean)
     overlay, fresh = material("M_Overlay", (0.05, 0.65, 0.9), 0.8, True)
     if fresh:
         edit.recompile_material(overlay)
@@ -94,7 +52,7 @@ def build_materials():
 
 def main():
     inputs = sorted((ROOT / "generated").glob("SM_*.obj"))
-    if len(inputs) < 16:
+    if len(inputs) < 18 or not (ROOT / 'generated' / 'SM_surf.obj').is_file():
         raise RuntimeError("Run node scripts/generate-models.mjs before the editor setup")
     for folder in ["Models", "Materials", "Maps"]:
         ue.EditorAssetLibrary.make_directory(ASSET_ROOT + "/" + folder)
@@ -104,16 +62,22 @@ def main():
         if os.environ.get("MARITIME_MATERIALS_ONLY") == "1":
             continue
         target = ASSET_ROOT + "/Models/" + source.stem
-        if ue.EditorAssetLibrary.does_asset_exist(target) and os.environ.get("MARITIME_REIMPORT") != "1":
+        digest = hashlib.sha256(source.read_bytes() + b'visual-import-v4').hexdigest()
+        existing = ue.load_asset(target) if ue.EditorAssetLibrary.does_asset_exist(target) else None
+        if existing and not replace and ue.EditorAssetLibrary.get_metadata_tag(existing, 'MaritimeSourceHash') == digest:
+            # Also migrate import settings/obsolete slots without reimporting OBJ.
+            if ue.EditorAssetLibrary.get_metadata_tag(existing, 'MaritimeImportSettings') != 'v4.2':
+                configure_mesh(existing, source.stem)
+                ue.EditorAssetLibrary.save_loaded_asset(existing)
             continue
-        if replace:
+        if existing:
             visual_materials.backup(target)
         task = ue.AssetImportTask()
         task.filename = str(source)
         task.destination_path = ASSET_ROOT + "/Models"
         task.destination_name = source.stem
         task.automated = True
-        task.replace_existing = os.environ.get("MARITIME_REIMPORT") == "1"
+        task.replace_existing = True
         task.save = True
         options = ue.FbxImportUI()
         options.set_editor_property("is_obj_import", True)
@@ -133,7 +97,9 @@ def main():
             raise RuntimeError("Import failed: " + target)
         mesh = ue.load_asset(target)
         visual_materials.assign(mesh, surfaces)
+        configure_mesh(mesh, source.stem)
         ue.EditorAssetLibrary.set_metadata_tag(mesh, "MaritimeVisualVersion", visual_materials.VERSION)
+        ue.EditorAssetLibrary.set_metadata_tag(mesh, 'MaritimeSourceHash', digest)
         ue.EditorAssetLibrary.save_loaded_asset(mesh)
     build_materials()
     map_path = ASSET_ROOT + "/Maps/Ocean"
@@ -146,7 +112,69 @@ def main():
         visual_materials.backup(map_path)
     visual_environment.install(map_path)
     ue.EditorAssetLibrary.save_directory(ASSET_ROOT)
-    ue.log("Maritime exterior v2 imported. Existing assets backed up when upgrading. Open Ocean and Play.")
+    audit_assets(inputs)
+    ue.log("Maritime exterior v4 imported. Changed generated assets backed up before upgrading. Open Ocean and Play.")
+
+
+def configure_mesh(mesh, name):
+    subsystem = ue.get_editor_subsystem(ue.StaticMeshEditorSubsystem)
+    # Reimport preserves old slots (e.g. the former coast foam), even when no
+    # triangle uses them. One leftover translucent slot disables Nanite entirely.
+    sections = [(lod,section,subsystem.get_lod_material_slot(mesh,lod,section))
+                for lod in range(mesh.get_num_lods()) for section in range(mesh.get_num_sections(lod))]
+    used = sorted({slot for _,_,slot in sections})
+    slots = mesh.get_editor_property('static_materials')
+    if len(used) < len(slots):
+        remap = {old:new for new,old in enumerate(used)}
+        for lod,section,slot in sections:
+            if remap[slot] != slot: subsystem.set_lod_material_slot(mesh,remap[slot],lod,section)
+        mesh.set_editor_property('static_materials',[slots[index] for index in used])
+    # Interchange may ignore the FbxImportUI collision flag for OBJ. Remove the
+    # resulting convex bodies from the asset, not only from runtime components.
+    subsystem.remove_collisions_with_notification(mesh, False)
+    settings = subsystem.get_nanite_settings(mesh)
+    settings.set_editor_property('enabled', name not in ('SM_ocean','SM_seabed','SM_surf','SM_wake','SM_vsr700','SM_uncertain'))
+    if name not in ('SM_coast','SM_ocean','SM_seabed','SM_surf','SM_wake'):
+        # UE stores inverse powers: step = 2^(-PositionPrecision) cm.
+        settings.set_editor_property('position_precision', 2)  # 0.25 cm: preserve thin painted lettering
+    subsystem.set_nanite_settings(mesh, settings, False)
+    build = subsystem.get_lod_build_settings(mesh, 0)
+    build.set_editor_property('use_full_precision_u_vs', True)
+    build.set_editor_property('generate_lightmap_u_vs', False)
+    # Imported analytic normals are authoritative; only rebuild the tangent frame.
+    build.set_editor_property('recompute_normals', False)
+    build.set_editor_property('recompute_tangents', True)
+    if name in ('SM_ocean','SM_seabed','SM_surf','SM_wake'):
+        build.set_editor_property('distance_field_resolution_scale', 0.)
+    if name in ('SM_ocean','SM_wake'):
+        # A flat plane has zero Z extent: multiplying its bounds cannot include WPO.
+        for side in ('positive_bounds_extension','negative_bounds_extension'):
+            mesh.set_editor_property(side, ue.Vector(0,0,1000))
+    if name == 'SM_vsr700':
+        for side in ('positive_bounds_extension','negative_bounds_extension'):
+            mesh.set_editor_property(side, ue.Vector(0,400,0))
+    subsystem.set_lod_build_settings(mesh, 0, build)
+    ue.EditorAssetLibrary.set_metadata_tag(mesh,'MaritimeImportSettings','v4.2')
+
+
+def audit_assets(inputs):
+    subsystem = ue.get_editor_subsystem(ue.StaticMeshEditorSubsystem)
+    report = {}
+    for source in inputs:
+        mesh = ue.load_asset(ASSET_ROOT + '/Models/' + source.stem)
+        settings = subsystem.get_nanite_settings(mesh)
+        nanite = settings.get_editor_property('enabled')
+        collisions = subsystem.get_simple_collision_count(mesh)
+        if collisions != 0: raise RuntimeError('Unexpected visual collision: '+source.stem)
+        if source.stem == 'SM_coast' and not nanite: raise RuntimeError('Coast is not Nanite')
+        for slot in mesh.get_editor_property('static_materials'):
+            if nanite and not edit.has_material_usage(slot.material_interface, ue.MaterialUsage.MATUSAGE_NANITE):
+                raise RuntimeError('Missing Nanite material permutation: '+slot.material_interface.get_name())
+        precision = settings.get_editor_property('position_precision')
+        if source.stem not in ('SM_coast','SM_ocean','SM_seabed','SM_surf','SM_wake') and precision != 2:
+            raise RuntimeError('Insufficient hull marking precision: '+source.stem)
+        report[source.stem] = {'nanite':bool(nanite),'simpleCollisions':collisions,'positionPrecision':precision,'verticesLod0':subsystem.get_number_verts(mesh,0)}
+    (ROOT/'generated'/'asset-audit.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
 
 
 main()

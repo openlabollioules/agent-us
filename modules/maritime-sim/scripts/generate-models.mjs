@@ -2,6 +2,7 @@ import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { detailedModel } from "./visuals/fleet.mjs";
 import { terrain } from "./visuals/terrain.mjs";
+import { oceanMesh, writeSeaHeader } from "./visuals/sea.mjs";
 
 // Original exterior reconstructions from public imagery; see catalog/REFERENCES.md.
 export class Mesh {
@@ -9,7 +10,7 @@ export class Mesh {
   faces = [];
   add(vertices, faces, material = "steel", smooth = false) {
     const offset = this.vertices.length;
-    this.vertices.push(...vertices);
+    for (const vertex of vertices) this.vertices.push(vertex);
     for (const face of faces) {
       for (let i = 1; i < face.length - 1; i++)
         this.faces.push({ indices: [face[0], face[i], face[i + 1]].map((v) => v + offset), material, smooth });
@@ -71,7 +72,7 @@ export class Mesh {
       const normal = [u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
       const dominant = normal.map(Math.abs).indexOf(Math.max(...normal.map(Math.abs)));
       const axes = [0,1,2].filter((axis) => axis !== dominant);
-      for (const point of [a,b,c]) lines.push(`vt ${(point[axes[0]]/10).toFixed(6)} ${(point[axes[1]]/10).toFixed(6)}`);
+      for (const point of [a,b,c]) lines.push(`vt ${(point[axes[0]]/10).toFixed(9)} ${(point[axes[1]]/10).toFixed(9)}`);
       for (const id of face.indices) {
         const n = face.smooth ? normals[id] : faceNormals[index];
         const size = Math.hypot(...n);
@@ -177,12 +178,15 @@ export async function generate() {
   await mkdir(output,{recursive:true});
   const catalog = JSON.parse(await readFile(new URL("../catalog/models.json",import.meta.url),"utf8"));
   const models = catalog.map((model) => [model.id.replaceAll("-","_"),buildModel(model)]);
-  models.push(["ocean",grid(30000,256,0,"water")]);
+  models.push(["ocean",oceanMesh(Mesh)]);
+  models.push(["wake",grid(10,64,0,"wake")]);
+  await writeSeaHeader();
   models.push(...terrain(Mesh));
   const colors = { steel:[.42,.48,.52],dark:[.055,.075,.085],glass:[.035,.12,.16],deck:[.14,.17,.18],
     white:[.8,.83,.8],container:[.38,.17,.11],signal:[.1,.8,1],water:[.015,.16,.22],sand:[.2,.18,.11],land:[.12,.25,.15],
     hull:[.38,.42,.44],paint:[.46,.49,.5],rubber:[.025,.031,.034],panel:[.26,.28,.29],metal:[.36,.38,.4],
-    antifouling:[.13,.038,.026],yellow:[.72,.48,.075],red:[.5,.022,.015],green:[.02,.3,.09],rock:[.27,.25,.21] };
+    antifouling:[.13,.038,.026],yellow:[.72,.48,.075],red:[.5,.022,.015],green:[.02,.3,.09],rock:[.27,.25,.21],
+    marking:[.075,.085,.09],sub_marking:[.49,.50,.48],rotor:[.02,.025,.03],surf:[.6,.67,.68],wake:[.56,.65,.66] };
   await writeFile(new URL("maritime.mtl",output),Object.entries(colors).map(([id,rgb])=>
     `newmtl ${id}\nKd ${rgb.join(" ")}\nKs 0.3 0.3 0.3\nNs 60\n`).join("\n"));
   for (const [id,mesh] of models) await writeFile(new URL(`SM_${id}.obj`,output),mesh.obj());

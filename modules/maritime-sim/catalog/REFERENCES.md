@@ -1,5 +1,7 @@
 # Références visuelles publiques — consultation du 6 septembre 2026
 
+Les textures CC0, marquages attestés et changements du 7 septembre 2026 sont détaillés dans [VISUAL_V3.md](VISUAL_V3.md).
+
 Ces liens servent à une reconstruction extérieure à partir d'images publiques. Ils ne fournissent ni plans de construction ni licence de redistribution des photographies. La révision visuelle 2 utilise des géométries originales plus détaillées ; elles ne sont pas validées par Naval Group ou Airbus. Les valeurs sans cote publique sont des estimations artistiques, jamais des paramètres de performance du jeu.
 
 ## Références effectivement examinées pour la révision 2
@@ -31,3 +33,5 @@ Les matériaux de peinture, vitrage, revêtement sombre, pont et eau sont des r�
 Images de référence directement accessibles depuis la page drones Naval Group : [vue Seagent XL](https://www.naval-group.com/sites/default/files/styles/default_landscape_small_fallback/public/2026-04/1167_NG_DRONE_SEAGENT-XL.png?itok=F-1uwBmR), [concept Seaquest M/L](https://www.naval-group.com/sites/default/files/styles/default_landscape_small_fallback/public/2026-04/NG_SEAQUEST_ML_0.png?itok=aZIZwSOc). Elles restent hébergées par leur ayant droit.
 
 Pour poursuivre la validation de fidélité, compléter chaque modèle avec des vues profil/arrière/dessus lorsque disponibles, puis comparer avec `scripts/render-lookdev.py` (caméra et champ de vision consignés dans `generated/lookdev/capture-manifest.json`). Une reconstruction d'après quelques photographies n'est pas un modèle de photogrammétrie ni un relevé industriel. Les positions de petits accessoires, UV artistiques dédiés, patine photographique et validation sous tous les angles restent à affiner.
+
+La [r?vision visuelle 4](VISUAL_V4.md) pr?cise les nouveaux scans CC0, les corrections Nanite/exposition et la r?ponse amortie des coques.

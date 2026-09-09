@@ -2,6 +2,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
+#include "MaritimeMotion.h"
 #include "MaritimeWorld.generated.h"
 
 class UStaticMeshComponent;
@@ -12,6 +13,15 @@ class ACameraActor;
 class ADirectionalLight;
 class AExponentialHeightFog;
 class FJsonObject;
+
+// Render transforms only. The bridge frame remains the authoritative position.
+struct FMaritimeAppearance
+{
+    FVector From = FVector::ZeroVector, To = FVector::ZeroVector;
+    float Heading = 0, FromHeading = 0, LengthM = 10, BeamM = 3, Age = 2, SpeedMps = 0;
+    MaritimeMotion::FSpring Heave, Pitch, Roll;
+    FString Model;
+};
 
 UCLASS()
 class MARITIMESIM_API AMaritimeWorld : public AActor
@@ -27,11 +37,15 @@ private:
     bool ApplyFrame(const TSharedPtr<FJsonObject>& Envelope);
     void ClearScene();
     void UpdateCamera(float DeltaSeconds);
+    void UpdateAppearance(float DeltaSeconds);
     void AddLine(const FVector& A, const FVector& B, float Width = 0.5f);
     UStaticMeshComponent* AddMesh(const FString& Name, const FString& Asset);
     UTextRenderComponent* AddLabel(const FString& Text);
     UPROPERTY() TMap<FString, TObjectPtr<UStaticMeshComponent>> Contacts;
     UPROPERTY() TMap<FString, TObjectPtr<UTextRenderComponent>> Labels;
+    UPROPERTY() TMap<FString, TObjectPtr<UStaticMeshComponent>> Wakes;
+    TMap<FString, FMaritimeAppearance> Appearance;
+    UPROPERTY() TObjectPtr<UStaticMeshComponent> OceanMesh;
     UPROPERTY() TObjectPtr<UInstancedStaticMeshComponent> Lines;
     UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> OceanMaterial;
     UPROPERTY() TObjectPtr<ACameraActor> Camera;
@@ -57,4 +71,9 @@ private:
     float DistanceM = 1600;
     float HeightOffsetM = 0;
     float VisibilityM = 20000;
+    double SceneTime = 0;
+    double WaveTimeOffset = 0;
+    float WaveHeightM = .6f;
+    float DisplayWaveHeightM = .6f;
+    float Wetness = .12f;
 };

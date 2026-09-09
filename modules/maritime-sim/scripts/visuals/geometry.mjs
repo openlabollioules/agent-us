@@ -79,9 +79,18 @@ export function lathe(m,stations,mat="rubber",sides=96) {
 
 export function interpolate(stations,steps=6) {
   const out=[];
+  // Monotone cubic interpolation: continuous tangents, no swollen ring seams.
+  const slope=(i,k)=>{
+    const secant=j=>(stations[j+1][k]-stations[j][k])/(stations[j+1][0]-stations[j][0]);
+    if(i===0)return secant(0);
+    if(i===stations.length-1)return secant(i-1);
+    const a=secant(i-1),b=secant(i);
+    return a*b<=0?0:2*a*b/(a+b);
+  };
   for(let i=0;i<stations.length-1;i++)for(let j=0;j<steps;j++) {
-    const t=j/steps, s=t*t*(3-2*t);
-    out.push(stations[i].map((v,k)=>v+(stations[i+1][k]-v)*(k===0?t:s)));
+    const t=j/steps,d=stations[i+1][0]-stations[i][0];
+    out.push(stations[i].map((v,k)=>k===0?v+d*t:
+      (2*t**3-3*t*t+1)*v+(t**3-2*t*t+t)*d*slope(i,k)+(-2*t**3+3*t*t)*stations[i+1][k]+(t**3-t*t)*d*slope(i+1,k)));
   }
   return [...out,stations.at(-1)];
 }

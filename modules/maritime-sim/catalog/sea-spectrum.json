@@ -1,0 +1,9 @@
+{
+  "description": "Artistic sea spectrum only. Metres, seconds; amplitudes are fractions of the scene wave height. Not hydrodynamic data.",
+  "waves": [
+    { "wavelengthM": 140, "angleRad": 0.32, "amplitude": 0.19, "phase": 0 },
+    { "wavelengthM": 62, "angleRad": 0.74, "amplitude": 0.13, "phase": 1.7 },
+    { "wavelengthM": 28, "angleRad": -0.42, "amplitude": 0.085, "phase": 3.1 },
+    { "wavelengthM": 13, "angleRad": 1.2, "amplitude": 0.045, "phase": 4.8 }
+  ]
+}

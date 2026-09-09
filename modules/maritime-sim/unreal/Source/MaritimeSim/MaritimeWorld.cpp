@@ -1,4 +1,5 @@
 #include "MaritimeWorld.h"
+#include "MaritimeSea.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -98,6 +99,19 @@ void AMaritimeWorld::BeginPlay()
         BridgeUrl = TEXT("http://127.0.0.1:8787");
     Camera = GetWorld()->SpawnActor<ACameraActor>();
     Camera->GetCameraComponent()->SetFieldOfView(60);
+    auto& Exposure = Camera->GetCameraComponent()->PostProcessSettings;
+    Exposure.bOverride_AutoExposureMethod = true;
+    Exposure.AutoExposureMethod = EAutoExposureMethod::AEM_Histogram;
+    Exposure.bOverride_AutoExposureMinBrightness = Exposure.bOverride_AutoExposureMaxBrightness = true;
+    Exposure.AutoExposureMinBrightness = 0;
+    Exposure.AutoExposureMaxBrightness = 16;
+    Exposure.bOverride_AutoExposureBias = true;
+    Exposure.AutoExposureBias = -.35f;
+    Exposure.bOverride_AutoExposureSpeedUp = Exposure.bOverride_AutoExposureSpeedDown = true;
+    Exposure.AutoExposureSpeedUp = 3;
+    Exposure.AutoExposureSpeedDown = 1.5f;
+    Exposure.bOverride_BloomIntensity = true;
+    Exposure.BloomIntensity = .15f;
     if (auto* PC = GetWorld()->GetFirstPlayerController())
     {
         PC->SetViewTarget(Camera);
@@ -105,18 +119,29 @@ void AMaritimeWorld::BeginPlay()
         PC->SetInputMode(FInputModeGameAndUI());
     }
     auto* Ocean = AddMesh(TEXT("Ocean"), TEXT("/Game/Maritime/Models/SM_ocean.SM_ocean"));
+    OceanMesh = Ocean;
+    Ocean->SetCastShadow(false);
     if (auto* Mat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Maritime/Materials/M_Ocean.M_Ocean")))
     {
         OceanMaterial = UMaterialInstanceDynamic::Create(Mat, this);
         Ocean->SetMaterial(0, OceanMaterial);
     }
-    AddMesh(TEXT("Seabed"), TEXT("/Game/Maritime/Models/SM_seabed.SM_seabed"));
-    AddMesh(TEXT("Coast"), TEXT("/Game/Maritime/Models/SM_coast.SM_coast"));
+    auto* Seabed = AddMesh(TEXT("Seabed"), TEXT("/Game/Maritime/Models/SM_seabed.SM_seabed"));
+    Seabed->SetCastShadow(false);
+    Seabed->bAffectDistanceFieldLighting = false;
+    auto* Coast = AddMesh(TEXT("Coast"), TEXT("/Game/Maritime/Models/SM_coast.SM_coast"));
+    Coast->SetMobility(EComponentMobility::Static);
+    auto* Surf = AddMesh(TEXT("Surf"), TEXT("/Game/Maritime/Models/SM_surf.SM_surf"));
+    Surf->SetCastShadow(false);
+    Surf->bAffectDistanceFieldLighting = false;
+    Surf->SetMobility(EComponentMobility::Static);
+    Ocean->bAffectDistanceFieldLighting = false;
     Sun = GetWorld()->SpawnActor<ADirectionalLight>();
     Sun->GetLightComponent()->SetMobility(EComponentMobility::Movable);
-    Sun->GetLightComponent()->SetIntensity(6);
+    Sun->GetLightComponent()->SetIntensity(80000);
     CastChecked<UDirectionalLightComponent>(Sun->GetLightComponent())->bAtmosphereSunLight = true;
-    Sun->SetActorRotation(FRotator(-35, -40, 0));
+    CastChecked<UDirectionalLightComponent>(Sun->GetLightComponent())->LightSourceAngle = .5357f;
+    Sun->SetActorRotation(FRotator(-35, 65, 0));
     auto* Atmosphere = NewObject<USkyAtmosphereComponent>(this);
     Atmosphere->SetupAttachment(RootComponent);
     Atmosphere->RegisterComponent();
@@ -168,7 +193,8 @@ void AMaritimeWorld::ClearScene()
 {
     for (auto& Pair : Contacts) Pair.Value->DestroyComponent();
     for (auto& Pair : Labels) Pair.Value->DestroyComponent();
-    Contacts.Empty(); Labels.Empty();
+    for (auto& Pair : Wakes) Pair.Value->DestroyComponent();
+    Contacts.Empty(); Labels.Empty(); Wakes.Empty(); Appearance.Empty();
     Lines->ClearInstances();
     bHasFrame = false;
     LastRevision = -1;
@@ -253,6 +279,8 @@ bool AMaritimeWorld::ApplyFrame(const TSharedPtr<FJsonObject>& Envelope)
     {
         Contacts[Id]->DestroyComponent(); Contacts.Remove(Id);
         Labels[Id]->DestroyComponent(); Labels.Remove(Id);
+        if (Wakes.Contains(Id)) { Wakes[Id]->DestroyComponent(); Wakes.Remove(Id); }
+        Appearance.Remove(Id);
     }
     Lines->ClearInstances();
     for (const auto& C : Data)
@@ -263,9 +291,43 @@ bool AMaritimeWorld::ApplyFrame(const TSharedPtr<FJsonObject>& Envelope)
             Labels.Add(C.Id, AddLabel(C.Label));
         }
         auto* Mesh = Contacts[C.Id].Get();
-        Mesh->SetStaticMesh(LoadObject<UStaticMesh>(nullptr, *MeshPath(C.Model)));
-        Mesh->SetWorldLocation(C.Position);
-        Mesh->SetWorldRotation(FRotator(0, C.Heading - 90., 0));
+        const bool bNewVisual = !Appearance.Contains(C.Id) || Appearance[C.Id].Model != C.Model;
+        if (bNewVisual)
+        {
+            Mesh->EmptyOverrideMaterials();
+            Mesh->SetStaticMesh(LoadObject<UStaticMesh>(nullptr, *MeshPath(C.Model)));
+            for (int32 Slot = 0; Slot < Mesh->GetNumMaterials(); ++Slot)
+                Mesh->CreateAndSetMaterialInstanceDynamic(Slot);
+            FMaritimeAppearance Visual;
+            Visual.From = Visual.To = C.Position; Visual.Model = C.Model;
+            Visual.FromHeading = Visual.Heading = C.Heading - 90.;
+            if (Mesh->GetStaticMesh())
+            {
+                const auto Size = Mesh->GetStaticMesh()->GetBoundingBox().GetSize() * .01;
+                Visual.LengthM = Size.X; Visual.BeamM = Size.Y;
+            }
+            Appearance.Add(C.Id, Visual);
+        }
+        auto& Visual = Appearance[C.Id];
+        const float NewHeading = C.Heading - 90.;
+        if (!Visual.To.Equals(C.Position, .1) || FMath::Abs(FMath::FindDeltaAngleDegrees(Visual.Heading, NewHeading)) > .01f)
+        {
+            const double Elapsed = Time - SceneTime;
+            Visual.SpeedMps = Elapsed > 0 ? FMath::Clamp(FVector::Dist2D(Visual.To, C.Position) / (100. * Elapsed), 0., 25.) : 0;
+            const double Blend = FMath::SmoothStep(0., 1., FMath::Clamp(Visual.Age / 1.2, 0., 1.));
+            Visual.From = FMath::Lerp(Visual.From, Visual.To, Blend); // exclude visual heave
+            Visual.FromHeading += FMath::FindDeltaAngleDegrees(Visual.FromHeading, Visual.Heading) * Blend;
+            Visual.To = C.Position; Visual.Age = 0;
+        }
+        Visual.Heading = NewHeading;
+        if (!Wakes.Contains(C.Id) && C.Model != TEXT("uncertain") && C.Model != TEXT("vsr700"))
+        {
+            auto* WakeMesh = AddMesh(C.Id + TEXT("_wake"), TEXT("/Game/Maritime/Models/SM_wake.SM_wake"));
+            WakeMesh->SetCastShadow(false);
+            if (auto* WakeMat = LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/Maritime/Materials/M_Wake.M_Wake")))
+                WakeMesh->SetMaterial(0, UMaterialInstanceDynamic::Create(WakeMat, this));
+            Wakes.Add(C.Id,WakeMesh);
+        }
         auto* Label = Labels[C.Id].Get();
         Label->SetText(FText::FromString(C.Label + (C.bUncertain ? TEXT(" [?]") : TEXT(""))));
         Label->SetWorldLocation(C.Position + FVector(0, 0, 5000));
@@ -282,12 +344,30 @@ bool AMaritimeWorld::ApplyFrame(const TSharedPtr<FJsonObject>& Envelope)
     }
     Focus = NewFocus; FocusRadiusM = FMath::Clamp(Radius, 25., 100000.);
     VisibilityM = FMath::Clamp(Visibility, 20., 100000.);
+    if (!bHasFrame) { WaveTimeOffset = Time; DisplayWaveHeightM = FMath::Clamp(Wave, 0., 20.); }
+    SceneTime = Time; WaveHeightM = FMath::Clamp(Wave, 0., 20.);
+    FString Weather;
+    (*EnvironmentPtr)->TryGetStringField(TEXT("condition"), Weather);
+    Wetness = Weather == TEXT("rain") || Weather == TEXT("storm") ? .85f : .12f;
+    Sun->GetLightComponent()->SetIntensity((Weather == TEXT("storm") ? 12000.f : Weather == TEXT("rain") ? 24000.f : 80000.f)
+        * FMath::Clamp(float(FMath::Sin(FMath::DegreesToRadians(SunElevation))) * 2.f, .0001f, 1.f));
+    Sun->GetLightComponent()->SetLightColor(SunElevation < 12 ? FLinearColor(1.f,.66f,.42f) : FLinearColor::White);
     if (OceanMaterial)
     {
-        OceanMaterial->SetScalarParameterValue(TEXT("SceneTime"), Time);
-        OceanMaterial->SetScalarParameterValue(TEXT("WaveHeight"), FMath::Clamp(Wave, 0., 20.) * 100.);
+        OceanMaterial->SetScalarParameterValue(TEXT("SceneTime"), WaveTimeOffset);
     }
-    Sun->SetActorRotation(FRotator(-FMath::Clamp(SunElevation, -90., 90.), -40, 0));
+    // Material parameters change with the weather/frame, not in every mesh slot each tick.
+    for (const auto& Pair : Contacts)
+    {
+        const auto& Model = Appearance[Pair.Key].Model;
+        for (int32 Slot = 0; Slot < Pair.Value->GetNumMaterials(); ++Slot)
+            if (auto* Mat = Cast<UMaterialInstanceDynamic>(Pair.Value->GetMaterial(Slot)))
+            {
+                Mat->SetScalarParameterValue(TEXT("Wetness"), Model == TEXT("suffren") || Model.StartsWith(TEXT("seagent-")) ? .72f : Wetness);
+                Mat->SetScalarParameterValue(TEXT("RotorHz"), Model == TEXT("vsr700") ? 12.f : 0.f);
+            }
+    }
+    Sun->SetActorRotation(FRotator(-FMath::Clamp(SunElevation, -90., 90.), 65, 0));
     FString CameraJson;
     FJsonSerializer::Serialize(Cam.ToSharedRef(), TJsonWriterFactory<>::Create(&CameraJson));
     if (LastCameraJson != CameraJson)
@@ -301,8 +381,69 @@ bool AMaritimeWorld::ApplyFrame(const TSharedPtr<FJsonObject>& Envelope)
     FString Presentation;
     Scene->TryGetStringField(TEXT("presentation"), Presentation);
     Banner->SetText(FText::FromString(Presentation == TEXT("showcase")
-        ? TEXT("FLEET GALLERY - illustrative blockouts") : TEXT("FICTIONAL EXERCISE - estimated tracks")));
+        ? TEXT("FLEET GALLERY - public exterior reconstructions") : TEXT("FICTIONAL EXERCISE - estimated tracks")));
     return true;
+}
+
+void AMaritimeWorld::UpdateAppearance(float DeltaSeconds)
+{
+    const double T = GetWorld()->GetTimeSeconds() + WaveTimeOffset;
+    DisplayWaveHeightM = FMath::Lerp(DisplayWaveHeightM, WaveHeightM, 1.f - FMath::Exp(-DeltaSeconds * .7f));
+    if (OceanMaterial) OceanMaterial->SetScalarParameterValue(TEXT("WaveHeight"), DisplayWaveHeightM * 100.f);
+    for (auto& Pair : Appearance)
+    {
+        auto* Mesh = Contacts.FindRef(Pair.Key).Get();
+        if (!Mesh) continue;
+        auto& V = Pair.Value;
+        V.Age += DeltaSeconds;
+        const double Alpha = FMath::SmoothStep(0., 1., FMath::Clamp(V.Age / 1.2, 0., 1.));
+        FVector P = FMath::Lerp(V.From, V.To, Alpha);
+        const double Heading = V.FromHeading + FMath::FindDeltaAngleDegrees(V.FromHeading, V.Heading) * Alpha;
+        FRotator R(0,Heading,0);
+        const bool bSub = V.Model == TEXT("suffren") || V.Model.StartsWith(TEXT("seagent-"));
+        const bool bAir = V.Model == TEXT("vsr700");
+        const bool bMarker = V.Model == TEXT("uncertain");
+        const double Surface = bSub ? FMath::Exp(FMath::Min(0., V.To.Z / 800.)) : 1.;
+        if (!bMarker && !bAir)
+        {
+            const auto Target = MaritimeMotion::Sample(P * .01, Heading, V.LengthM, V.BeamM, T, DisplayWaveHeightM, bSub);
+            const double Response = FMath::Clamp(.12 + FMath::Sqrt(V.LengthM) * .035, .18, .85);
+            V.Heave.Step(Target.Heave, DeltaSeconds, Response);
+            V.Pitch.Step(Target.Pitch, DeltaSeconds, Response * 1.2);
+            V.Roll.Step(Target.Roll, DeltaSeconds, Response * 1.6);
+            P.Z += V.Heave.Value * 100.;
+            R.Pitch = V.Pitch.Value; R.Roll = V.Roll.Value;
+        }
+        if (bAir) { P.Z += FMath::Sin(T*.7)*7.; R.Roll = FMath::Sin(T*.45)*.8; }
+        Mesh->SetWorldLocationAndRotation(P,R);
+        Labels[Pair.Key]->SetWorldLocation(P+FVector(0,0,5000));
+        if (auto* WakeMesh=Wakes.FindRef(Pair.Key).Get())
+        {
+            const double WakeFade = 1. - FMath::SmoothStep(1.2, 5., double(V.Age));
+            const bool bWake = !bMarker && !bAir && V.SpeedMps > .25f && Surface > .65 && WakeFade > .01;
+            WakeMesh->SetVisibility(bWake);
+            if (bWake)
+            {
+                const double Length=FMath::Clamp(V.LengthM*1.8f,16.f,450.f);
+                const FVector Behind=FRotator(0,Heading,0).Vector()*(V.LengthM*.38+Length*.5)*100.;
+                WakeMesh->SetWorldLocation(FVector(P.X-Behind.X,P.Y-Behind.Y,18));
+                WakeMesh->SetWorldRotation(FRotator(0,Heading,0));
+                WakeMesh->SetWorldScale3D(FVector(Length*.1,FMath::Max(V.BeamM*3.f,5.f)*.1,1));
+                if (auto* Mat=Cast<UMaterialInstanceDynamic>(WakeMesh->GetMaterial(0)))
+                {
+                    Mat->SetScalarParameterValue(TEXT("Strength"),FMath::Clamp(V.SpeedMps/8.f,0.f,.9f)*WakeFade);
+                    Mat->SetScalarParameterValue(TEXT("WaveHeight"),DisplayWaveHeightM*100.f);
+                    Mat->SetScalarParameterValue(TEXT("SceneTime"),WaveTimeOffset);
+                }
+            }
+        }
+    }
+    if (OceanMesh && Camera)
+    {
+        const auto P=Camera->GetActorLocation();
+        // Match the dense grid spacing (800 m / 256), avoiding 100 m jumps.
+        OceanMesh->SetWorldLocation(FVector(FMath::GridSnap(P.X,312.5),FMath::GridSnap(P.Y,312.5),0));
+    }
 }
 
 void AMaritimeWorld::AddLine(const FVector& A, const FVector& B, float Width)
@@ -345,7 +486,7 @@ void AMaritimeWorld::UpdateCamera(float DeltaSeconds)
     Camera->SetActorLocation(FMath::VInterpTo(Camera->GetActorLocation(), Location, DeltaSeconds, 5));
     Camera->SetActorRotation(FMath::RInterpTo(Camera->GetActorRotation(), Rotation, DeltaSeconds, 5));
     const bool bUnderwater = Camera->GetActorLocation().Z < 0;
-    Fog->GetComponent()->SetFogDensity(bUnderwater ? .045f : FMath::Clamp(80.f / VisibilityM, .001f, .04f));
+    Fog->GetComponent()->SetFogDensity(bUnderwater ? .045f : FMath::Clamp(15.f / VisibilityM, .0002f, .04f));
     Fog->GetComponent()->SetFogInscatteringColor(bUnderwater ? FLinearColor(.015f,.14f,.22f) : FLinearColor(.45f,.58f,.66f));
     auto& PP = Camera->GetCameraComponent()->PostProcessSettings;
     PP.bOverride_SceneColorTint = true;
@@ -367,6 +508,7 @@ void AMaritimeWorld::Tick(float DeltaSeconds)
     PollElapsed += DeltaSeconds; OfflineElapsed += DeltaSeconds;
     if (PollElapsed >= .2f) { PollElapsed = 0; Poll(); }
     if (OfflineElapsed > 5 && bHasFrame) ClearScene();
+    UpdateAppearance(DeltaSeconds);
     UpdateCamera(DeltaSeconds);
 }
 

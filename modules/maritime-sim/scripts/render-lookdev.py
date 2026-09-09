@@ -26,7 +26,9 @@ world = ue.get_editor_subsystem(ue.UnrealEditorSubsystem).get_editor_world()
 
 
 def spawn(kind, location=(0, 0, 0)):
-    return actors.spawn_actor_from_class(kind, ue.Vector(*location))
+    actor = actors.spawn_actor_from_class(kind, ue.Vector(*location))
+    actor.set_actor_location(ue.Vector(*location), False, False)
+    return actor
 
 
 def mesh(name, location=(0, 0, 0)):
@@ -40,53 +42,61 @@ def mesh(name, location=(0, 0, 0)):
 
 sun = spawn(ue.DirectionalLight)
 sun.light_component.set_mobility(ue.ComponentMobility.MOVABLE)
-sun.set_actor_rotation(ue.Rotator(-28, -55, 0), False)
-sun.light_component.set_editor_property("intensity", 6.0)
+sun.set_actor_rotation(ue.Rotator(pitch=-35, yaw=65, roll=0), False)
+sun.light_component.set_editor_property("intensity", 80000.0)
 sun.light_component.set_editor_property("atmosphere_sun_light", True)
 spawn(ue.SkyAtmosphere)
 visual_environment.clouds()
 sky = spawn(ue.SkyLight)
 sky.light_component.set_mobility(ue.ComponentMobility.MOVABLE)
-sky.light_component.set_editor_property("source_type", ue.SkyLightSourceType.SLS_SPECIFIED_CUBEMAP)
-sky.light_component.set_editor_property("cubemap", ue.load_asset("/Engine/MapTemplates/Sky/DaylightAmbientCubemap"))
-sky.light_component.set_editor_property("intensity", .8)
+sky.light_component.set_editor_property("source_type", ue.SkyLightSourceType.SLS_CAPTURED_SCENE)
+sky.light_component.set_editor_property("real_time_capture", True)
+sky.light_component.set_editor_property("intensity", 1.)
 sky.light_component.recapture_sky()
 water = mesh("ocean")
+water.static_mesh_component.set_cast_shadow(False)
 water.static_mesh_component.set_material(0, ue.load_asset("/Game/Maritime/Materials/M_Ocean"))
 mesh("coast")
-mesh("seabed")
-capture = spawn(ue.SceneCapture2D)
-comp = capture.get_component_by_class(ue.SceneCaptureComponent2D)
-comp.set_editor_property("capture_every_frame", False)
-comp.set_editor_property("capture_on_movement", False)
-comp.set_editor_property("always_persist_rendering_state", True)
-comp.set_editor_property("capture_source", ue.SceneCaptureSource.SCS_FINAL_COLOR_LDR)
-comp.set_editor_property("fov_angle", 42.)
-target = ue.RenderingLibrary.create_render_target2d(world, 1600, 1000, ue.TextureRenderTargetFormat.RTF_RGBA8)
-comp.set_editor_property("texture_target", target)
+if ue.EditorAssetLibrary.does_asset_exist('/Game/Maritime/Models/SM_surf'):
+    mesh('surf').static_mesh_component.set_cast_shadow(False)
+mesh("seabed").static_mesh_component.set_cast_shadow(False)
+capture = spawn(ue.CameraActor)
+comp = capture.get_component_by_class(ue.CameraComponent)
+comp.set_field_of_view(42.)
+comp.set_editor_property('constrain_aspect_ratio', False)
 capture.root_component.set_mobility(ue.ComponentMobility.MOVABLE)
 pp = comp.get_editor_property("post_process_settings")
 pp.set_editor_property("override_auto_exposure_method", True)
-pp.set_editor_property("auto_exposure_method", ue.AutoExposureMethod.AEM_MANUAL)
-pp.set_editor_property("override_auto_exposure_apply_physical_camera_exposure", True)
-pp.set_editor_property("auto_exposure_apply_physical_camera_exposure", False)
+pp.set_editor_property("auto_exposure_method", ue.AutoExposureMethod.AEM_HISTOGRAM)
+for name,value in [('auto_exposure_min_brightness',0.),('auto_exposure_max_brightness',16.)]:
+    pp.set_editor_property('override_'+name,True)
+    pp.set_editor_property(name,value)
 pp.set_editor_property("override_auto_exposure_bias", True)
-pp.set_editor_property("auto_exposure_bias", 0.)
+pp.set_editor_property("auto_exposure_bias", -.35)
 pp.set_editor_property("override_dynamic_global_illumination_method", True)
 pp.set_editor_property("dynamic_global_illumination_method", ue.DynamicGlobalIlluminationMethod.LUMEN)
 pp.set_editor_property("override_reflection_method", True)
 pp.set_editor_property("reflection_method", ue.ReflectionMethod.LUMEN)
 comp.set_editor_property("post_process_settings", pp)
+levels.editor_set_game_view(True)
+levels.pilot_level_actor(capture)
 
-requested = os.environ.get("MARITIME_LOOKDEV", "fdi,suffren,seaquest_s,seaquest_m,seaquest_l,seagent_m,seagent_xl,france_libre,vsr700").split(",")
+requested = os.environ.get("MARITIME_LOOKDEV", "fdi,suffren,seaquest_s,seaquest_m,seaquest_l,seagent_m,seagent_xl,france_libre,vsr700,fdi_starboard,fdi_sunset,suffren_underwater,coast,fdi_detail,suffren_sail").split(",")
 catalog = json.loads((ROOT / "catalog" / "models.json").read_text(encoding="utf-8"))
 report = []
-state = {"index": 0, "boat": None, "ready_at": 0., "info": None}
+state = {"index": 0, "boat": None, "ready_at": 0., "info": None, "task": None}
+fog=spawn(ue.ExponentialHeightFog)
+fog_component=fog.get_component_by_class(ue.ExponentialHeightFogComponent)
+fog_component.set_editor_property('fog_density',.0008)
+fog_component.set_volumetric_fog(True)
 
 
 def prepare(name):
+    variant=name
+    name={'coast':'fdi','fdi_starboard':'fdi','fdi_sunset':'fdi','suffren_underwater':'suffren','fdi_detail':'fdi','suffren_sail':'suffren'}.get(name,name)
     entry = next(x for x in catalog if x["id"].replace("-", "_") == name)
     length = entry["sizeM"][0]
+    water.set_actor_location(ue.Vector(0,0,0),False,False)
     is_sub = entry["shape"] == "submarine"
     water.set_actor_hidden_in_game(is_sub)
     water.set_is_temporarily_hidden_in_editor(is_sub)
@@ -96,20 +106,49 @@ def prepare(name):
     if name == "vsr700":
         focus_z = 1.1
         length = 9
-    eye = ue.Vector(length*93, -length*117, length*55)
+    eye = ue.Vector(length*105, -length*138, length*35)
     focus = ue.Vector(0, 0, focus_z*100)
     capture.set_actor_location(eye, False, False)
     capture.set_actor_rotation(ue.MathLibrary.find_look_at_rotation(eye, focus), False)
+    if variant=='fdi_starboard':
+        eye.y=-eye.y
+        capture.set_actor_location(eye,False,False)
+        capture.set_actor_rotation(ue.MathLibrary.find_look_at_rotation(eye,focus),False)
+    if variant in ('fdi_detail','suffren_sail'):
+        eye=ue.Vector(5700,-4000,1250) if variant=='fdi_detail' else ue.Vector(1700,-1900,1450)
+        focus=ue.Vector(3500,-500,400) if variant=='fdi_detail' else ue.Vector(1180,0,1020)
+        capture.set_actor_location(eye,False,False)
+        capture.set_actor_rotation(ue.MathLibrary.find_look_at_rotation(eye,focus),False)
+    if variant=='coast':
+        eye=ue.Vector(195000,-495000,18000);focus=ue.Vector(285000,-440000,4000)
+        boat.set_actor_location(ue.Vector(240000,-460000,0),False,False)
+        water.set_actor_location(ue.Vector(240000,-460000,0),False,False)
+        capture.set_actor_location(eye,False,False)
+        capture.set_actor_rotation(ue.MathLibrary.find_look_at_rotation(eye,focus),False)
+    if variant=='suffren_underwater':
+        water.set_actor_hidden_in_game(False);water.set_is_temporarily_hidden_in_editor(False)
+        boat.set_actor_location(ue.Vector(0,0,-2600),False,False)
+        eye=ue.Vector(9000,-11000,-1800);focus=ue.Vector(0,0,-2200)
+        capture.set_actor_location(eye,False,False)
+        capture.set_actor_rotation(ue.MathLibrary.find_look_at_rotation(eye,focus),False)
+    fog_component.set_editor_property('fog_density',.025 if variant=='suffren_underwater' else .0008)
+    fog_component.set_editor_property('fog_inscattering_luminance',ue.LinearColor(.025,.15,.19,1) if variant=='suffren_underwater' else ue.LinearColor(.5,.62,.7,1))
+    sun.set_actor_rotation(ue.Rotator(pitch=-8 if variant=='fdi_sunset' else -35,yaw=65,roll=0),False)
+    sun.light_component.set_editor_property('intensity',25000. if variant=='fdi_sunset' else 80000.)
+    sun.light_component.set_light_color(ue.LinearColor(1,.6,.31,1) if variant=='fdi_sunset' else ue.LinearColor(1,1,1,1))
     state["boat"] = boat
-    state["ready_at"] = time.monotonic() + (90 if state["index"] == 0 else 12)
-    state["info"] = {"model": name, "image": name + ".png", "fovDeg": 42,
-                     "cameraCm": [eye.x, eye.y, eye.z], "dryInspection": is_sub,
+    ue.log('LOOKDEV_LIGHT: rotation='+str(sun.get_actor_rotation())+' direction='+str(sun.get_actor_forward_vector())+' lux='+str(sun.light_component.get_editor_property('intensity'))+' color='+str(sun.light_component.get_editor_property('light_color')))
+    ue.log('LOOKDEV_BOUNDS: '+str(boat.get_actor_bounds(False)))
+    levels.pilot_level_actor(capture)
+    state["ready_at"] = time.monotonic() + (30 if state["index"] == 0 else 12)
+    state["info"] = {"model": name, "image": variant + ".png", "fovDeg": 42,
+                     "cameraCm": [eye.x, eye.y, eye.z], "dryInspection": is_sub and variant!='suffren_underwater',
                      "engine": ue.SystemLibrary.get_engine_version()}
 
 
 def finish():
     ue.unregister_slate_post_tick_callback(callback)
-    ue.EditorPythonScriptingLibrary.set_keep_python_script_alive(False)
+    ue.EditorPythonScripting.set_keep_python_script_alive(False)
 
 
 def tick(delta):
@@ -118,21 +157,23 @@ def tick(delta):
             prepare(requested[state["index"]])
             return
         # Allow real engine ticks for transforms, shader results, sky and Lumen.
-        comp.capture_scene()
         if time.monotonic() < state["ready_at"]:
             return
         name = requested[state["index"]]
-        samples = [ue.RenderingLibrary.read_render_target_pixel(world, target, x, y)
-                   for x in (400, 800, 1200) for y in (200, 500, 800)]
-        if max(max(c.r, c.g, c.b) for c in samples) < 3:
-            raise RuntimeError("Black frame for " + name + "; check scene initialization and exposure")
-        ue.RenderingLibrary.export_render_target(world, target, str(OUT), name + ".png")
+        if state['task'] is None:
+            state['task'] = ue.AutomationLibrary.take_high_res_screenshot(1600, 1000, str(OUT / (name+'.png')), capture, delay=3.)
+            state['deadline'] = time.monotonic()+60
+            return
+        if not state['task'].is_task_done():
+            if time.monotonic()>state['deadline']: raise RuntimeError('Screenshot timed out: '+name)
+            return
         if not (OUT / (name + ".png")).is_file():
             raise RuntimeError("No render exported for " + name)
         report.append(state["info"])
         ue.log("LOOKDEV_CAPTURE: " + name)
         actors.destroy_actor(state["boat"])
         state["boat"] = None
+        state['task'] = None
         state["index"] += 1
         if state["index"] == len(requested):
             (OUT / "capture-manifest.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
@@ -143,5 +184,5 @@ def tick(delta):
         finish()
 
 
-ue.EditorPythonScriptingLibrary.set_keep_python_script_alive(True)
+ue.EditorPythonScripting.set_keep_python_script_alive(True)
 callback = ue.register_slate_post_tick_callback(tick)

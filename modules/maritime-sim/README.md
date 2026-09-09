@@ -2,7 +2,9 @@
 
 Ce répertoire peut être copié hors d’Agent Us. Il contient un projet **Unreal Engine 5.8 C++**, une passerelle HTTP Node 24, un lecteur Pixel Streaming et un contrat de scène Zod versionné. Le moteur est un **visualiseur**, pas une deuxième simulation : il n’avance jamais les mobiles ni les tours.
 
-**État : intégration fonctionnelle et révision visuelle 2, finition photoréaliste encore à poursuivre.** Le lancement de la vue 3D depuis Agent Us a été testé avec succès par l'utilisateur sous Windows. Les neuf modèles principaux sont des reconstructions extérieures originales à partir d'images publiques ; les concepts futurs sont identifiés comme tels. Les sources et procédures d'import sont fournies, les assets et exécutables générés restent locaux. La fidélité de tous les détails et les performances Windows/Linux ne sont pas certifiées.
+**État : intégration fonctionnelle et révision visuelle 4.** Le lancement de la vue 3D depuis Agent Us a été testé avec succès par l'utilisateur sous Windows. La [révision 4](catalog/VISUAL_V4.md) corrige le traitement des ombres et de l'exposition, ajoute Nanite, des textures de revêtement et une réponse amortie des coques à la houle. Les neuf modèles principaux restent des reconstructions extérieures à partir d'images publiques ; les concepts futurs sont identifiés comme tels. Les assets et exécutables générés restent locaux. La fidélité photographique de tous les détails reste à affiner.
+
+**Installation existante :** fermer le module, lancer `update-visuals.ps1`, puis `build.ps1 -Package` avec le même `-EngineRoot`. Aucune nouvelle extension Unreal n'est nécessaire. Voir [les corrections des avertissements et les commandes complètes](catalog/VISUAL_V4.md).
 
 ## Ce qui est implémenté
 
@@ -13,7 +15,7 @@ Ce répertoire peut être copié hors d’Agent Us. Il contient un projet **Unre
 - État météo traduit en hauteur de vague et visibilité ; soleil configurable par la scène indépendante. Dans Agent Us, la hauteur du soleil reste à 35° car les scénarios ne définissent pas d’heure réelle.
 - Galerie autonome : FDI, Suffren, Seaquest S/M/L, Seagent M/XL, France Libre, VSR700, cargo, pêcheur, patrouilleur.
 
-La mer possède un matériau volumique d'eau et des vagues cosmétiques continues entre les tours. Le rendu sous-marin conserve pour l'instant la teinte et le brouillard du visualiseur. Écume, sillages, pluie détaillée, son, mouvements des coques/rotors et finition des textures par un artiste restent à réaliser. Aucun calcul hydrodynamique ni paramètre de performance militaire n'est ajouté.
+La mer et les coques partagent un spectre de houle artistique : roulis, tangage et soulèvement continuent entre les tours. Les déplacements déjà reçus sont interpolés pendant 1,2 seconde, sans extrapolation. Les sillages dépendent de ces déplacements et disparaissent pour les contacts incertains ou immergés. Le rotor principal VSR700 tourne dans le visualiseur ; il reste fixe dans les planches d'inspection. Écume de côte, reflets, peinture mouillée et exposition solaire complètent le rendu. Pluie détaillée, embruns volumétriques, son et finition artistique restent à poursuivre. Aucun calcul hydrodynamique ni paramètre de performance militaire n'est ajouté.
 
 ## Architecture
 
@@ -51,10 +53,11 @@ npm.cmd ci
 npm.cmd --prefix modules/maritime-sim ci
 npm.cmd --prefix modules/maritime-sim/player ci
 npm.cmd --prefix modules/maritime-sim/player run build
+node --use-system-ca modules/maritime-sim/scripts/fetch-pbr-textures.mjs
 powershell -ExecutionPolicy Bypass -File modules/maritime-sim/scripts/build.ps1 -EngineRoot 'C:\Program Files\Epic Games\UE_5.8' -Package
 ```
 
-Le contournement de politique concerne uniquement ce processus qui exécute le script du dépôt. Celui-ci génère les OBJ, compile l’éditeur du projet, importe les assets par commandlet Python et package le jeu. Les étapes s’arrêtent sur erreur. Les fichiers sont dans `modules/maritime-sim/packages/Win64`. Pour une compilation Linux depuis Windows, installer le toolchain de cross-compilation Epic associé à 5.8 et passer `-Target Linux -Package`.
+Le contournement de politique concerne uniquement ce processus qui exécute le script du dépôt. Celui-ci génère les OBJ, compile l’éditeur du projet, importe les assets dans l’éditeur via Python avec `-ExecutePythonScript -nullrhi` et package le jeu. Les étapes s’arrêtent sur erreur. Les fichiers sont dans `modules/maritime-sim/packages/Win64`. Pour une compilation Linux depuis Windows, installer le toolchain de cross-compilation Epic associé à 5.8 et passer `-Target Linux -Package`.
 
 Pour l’inspection artistique : ouvrir `unreal/MaritimeSim.uproject`, puis `/Game/Maritime/Maps/Ocean`, et lancer **Standalone Game** pour tester Pixel Streaming. Le fichier de carte est produit par le script, il n’est pas versionné.
 
@@ -68,6 +71,7 @@ npm ci
 npm --prefix modules/maritime-sim ci
 npm --prefix modules/maritime-sim/player ci
 npm --prefix modules/maritime-sim/player run build
+node --use-system-ca modules/maritime-sim/scripts/fetch-pbr-textures.mjs
 export UE_ROOT="$HOME/UnrealEngine-5.8"
 bash modules/maritime-sim/scripts/build.sh --package
 ```
@@ -152,11 +156,13 @@ Un autre simulateur peut publier directement des snapshots validés par `protoco
 
 ## Assets et fidélité visuelle
 
-La **révision visuelle 2** reprend les neuf modèles FDI, Suffren, Seaquest S/M/L, Seagent M/XL, France Libre et VSR700 à partir d'images publiques. Coques lissées, superstructures, vitrages individuels, garde-corps, hangar, ponts marqués et carénages remplacent les volumes primitifs de ces modèles. Les trois bateaux civils restent des silhouettes simples. Le [catalogue](catalog/models.json) distingue cotes extérieures publiées et dimensions estimées ; les [références](catalog/REFERENCES.md) précisent les observations et les parties non documentées.
+La **révision visuelle 3** reprend les neuf modèles FDI, Suffren, Seaquest S/M/L, Seagent M/XL, France Libre et VSR700 à partir d'images publiques. Coques lissées avec tangentes continues, superstructures, vitrages individuels, garde-corps, hangar, ponts marqués et carénages remplacent les volumes primitifs de ces modèles. Les trois bateaux civils restent des silhouettes simples. Le [catalogue](catalog/models.json) distingue cotes extérieures publiées et dimensions estimées ; les [références](catalog/REFERENCES.md) précisent les observations et les parties non documentées. Les [détails de la révision 3](catalog/VISUAL_V3.md) recensent textures, marquages et limites.
 
-`node scripts/generate-models.mjs` produit 16 OBJ, un MTL et un rapport de géométrie dans `generated/`. `setup_unreal.py` les importe en `/Game/Maritime/Models/SM_<id>`, avec tirets remplacés par underscores, puis attribue les matériaux PBR par nom de slot. Les sources sont dans `scripts/visuals/`. Les fichiers dérivés restent ignorés par Git.
+`node scripts/generate-models.mjs` produit 18 OBJ, un MTL et un rapport de géométrie dans `generated/`, ainsi que `MaritimeSea.h` depuis `catalog/sea-spectrum.json` pour partager les vagues avec le renderer C++. `setup_unreal.py` importe les assets en `/Game/Maritime/Models/SM_<id>`, avec tirets remplacés par underscores, puis attribue les matériaux PBR par nom de slot. La côte opaque et son écume sont séparées pour utiliser Nanite. Les sources sont dans `scripts/visuals/`. Les fichiers lourds dérivés restent ignorés par Git.
 
-Le rendu utilise des peintures diélectriques, un pont rugueux, des métaux distincts, du vitrage réfléchissant et un revêtement sombre légèrement irrégulier. La mer utilise **Single Layer Water**, avec absorption/diffusion, normales de vagues filtrées selon la distance et houle de faible fréquence. Son animation est cosmétique et n'avance aucun tour. Le relief côtier et le fond marin sont continus et fictifs ; une couche de nuages volumétriques est ajoutée à Ocean. Les valeurs météo du jeu restent inchangées ; les nuages sont pour l'instant une ambiance fixe.
+Le rendu utilise des peintures grises satinées diélectriques, un pont antidérapant, des métaux nus distincts, du vitrage réfléchissant et un revêtement noir mat ou mouillé. La mer utilise **Single Layer Water**, avec absorption/diffusion, normales de vagues filtrées selon la distance, houle et écume. Le maillage concentrique suit la caméra pour conserver le détail à proximité. Le relief côtier continu reçoit neuf textures PBR 2K CC0 de Poly Haven (sable, roche, végétation), projetées selon trois axes, avec rochers près du rivage et écume. Les nuages volumétriques utilisent le contenu livré avec Unreal. L'intensité/couleur solaire, l'exposition, le brouillard et l'humidité des coques répondent aux paramètres de présentation existants ; la couverture nuageuse reste une ambiance fixe.
+
+**Aucune extension Unreal supplémentaire ni achat de plugin n'est nécessaire.** Nanite, TSR, Lumen, Single Layer Water, Sky Atmosphere et Volumetric Cloud sont fournis avec UE. Les plugins Python/Editor Scripting déjà activés servent à l'import. Le script télécharge quinze textures CC0 (environ 42 Mo) ; aucun compte Fab n'est nécessaire. Voir les crédits et les réglages dans [VISUAL_V4.md](catalog/VISUAL_V4.md).
 
 ### Mettre à jour une installation existante
 
@@ -164,19 +170,21 @@ Fermer la session Unreal du projet avant l'import. Depuis la racine Agent Us, so
 
 ```powershell
 ./modules/maritime-sim/scripts/update-visuals.ps1 -EngineRoot 'G:/Program Files/Epic Games/UE_5.8'
+& 'G:/Program Files/Epic Games/UE_5.8/Engine/Build/BatchFiles/Build.bat' MaritimeSimEditor Win64 Development '-Project=G:/DEV/agent-us/modules/maritime-sim/unreal/MaritimeSim.uproject' -WaitMutex
 ```
 
-Adapter le chemin du moteur. Pour la copie créée par l'éditeur dans un dossier avec espace, ajouter `-Project 'G:/DEV/agent-us/modules/maritime-sim/unreal 5.8/MaritimeSim.uproject'`. Utiliser le même projet pour l'import, le lancement et le packaging.
+Adapter le chemin du moteur. `-MaterialsOnly` évite le réimport des meshes après un réglage de matériau ; la première mise à jour v4 doit être complète. `-Offline` réutilise les textures déjà téléchargées. La révision 4 change aussi le C++ du visualiseur : le recompiler est nécessaire. Les sources de référence sont dans `unreal/` ; une ancienne copie `unreal 5.8/` doit recevoir les mêmes dossiers `Source/` et `Config/` avant d'être recompilée. Utiliser le même projet pour l'import, le lancement et le packaging.
 
 Sous Ubuntu 24.04 ou 26.04 avec UE installé :
 
 ```bash
 export UE_ROOT=/opt/UnrealEngine-5.8
 bash modules/maritime-sim/scripts/update-visuals.sh
+"$UE_ROOT/Engine/Build/BatchFiles/Linux/Build.sh" MaritimeSimEditor Linux Development "$PWD/modules/maritime-sim/unreal/MaritimeSim.uproject" -WaitMutex
 # Autre projet : passer son chemin .uproject comme premier argument.
 ```
 
-Cette commande active explicitement `MARITIME_REIMPORT=1`. Les anciens meshes, matériaux remplacés et la carte sont copiés une fois dans `/Game/Maritime/BackupBeforeExteriorV2/`. Une relance conserve cette première sauvegarde. Sans cette option, l'installation habituelle conserve les assets existants. Pour revenir en arrière, remplacer dans l'éditeur les assets concernés par leurs copies de sauvegarde en conservant les noms et emplacements d'origine.
+Cette commande active explicitement `MARITIME_REIMPORT=1`. Les anciens meshes, matériaux remplacés et la carte sont copiés une fois dans `/Game/Maritime/BackupBeforeExteriorV4/`. Une relance conserve cette première sauvegarde ; les sauvegardes v2/v3 restent disponibles et sont exclues des packages. Sans cette option, le build compare les empreintes des sources et actualise les assets générés qui ont changé. Pour revenir en arrière, restaurer les assets et les sources C++/Config de la même révision. Sous Linux, `MARITIME_OFFLINE=1` réutilise les textures en cache.
 
 Si le lecteur utilise une application dans `packages/Win64` ou `packages/Linux`, **refaire le packaging** avec les commandes d'installation précédentes : un exécutable déjà packagé conserve ses anciens assets. Le lancement depuis `UnrealEditor.exe <projet> -game` utilise directement les assets réimportés.
 
@@ -197,9 +205,9 @@ L'inspection est indépendante d'Agent Us et n'écrit pas dans Ocean :
   -RenderOffscreen -unattended -nosplash
 ```
 
-Les captures et leurs caméras sont dans `generated/lookdev/`. Les sous-marins sont présentés hors de l'eau pour examiner toute leur silhouette. Cette inspection ne mesure pas les performances et ne valide pas, à elle seule, le fonctionnement interactif sous Linux.
+Les quinze captures et leurs caméras sont dans `generated/lookdev/` : neuf modèles, les deux bords de la FDI, une lumière rasante, le Suffren immergé, la côte et deux vues rapprochées des inscriptions. Le script refuse les images noires et les erreurs de compilation des matériaux. Cette inspection ne mesure pas les performances et ne valide pas, à elle seule, le fonctionnement interactif sous Linux.
 
-La révision 2 reste une **reconstruction visuelle à affiner**, pas une reproduction industrielle ni une photogrammétrie certifiée. Des vues rapprochées supplémentaires, une finition artistique des UV et textures, les embruns/sillages, les transitions sous-marines et une validation systématique des détails restent nécessaires pour qualifier le résultat d'ultra réaliste. Les concepts futurs restent explicitement identifiés. Aucun intérieur, système d'armement ou paramètre tactique réel n'est ajouté.
+La révision 4 reste une **reconstruction visuelle à affiner**, pas une reproduction industrielle ni une photogrammétrie certifiée. Des vues rapprochées supplémentaires, la finition des détails extérieurs, les embruns volumétriques et les transitions sous-marines restent nécessaires pour une fidélité photographique systématique. Les sillages et l'écume sont des effets de surface ; la flottaison est une animation artistique. Les concepts futurs restent explicitement identifiés. Aucun intérieur, système d'armement ou paramètre tactique réel n'est ajouté.
 
 Un artiste peut toujours remplacer `SM_<id>` en conservant l'origine à la flottaison (centre pour les sous-marins), +X vers l'étrave, +Z vertical et les centimètres Unreal. Les noms stables permettent de poursuivre la finition sans modifier Agent Us, ses scénarios ou le contrat de scène.
 

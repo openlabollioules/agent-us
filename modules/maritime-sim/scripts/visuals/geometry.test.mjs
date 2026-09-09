@@ -4,6 +4,8 @@ import { readFile } from "node:fs/promises";
 import { buildModel, Mesh } from "../generate-models.mjs";
 import { elevation, terrain } from "./terrain.mjs";
 import { triangulate } from "./geometry.mjs";
+import { oceanMesh, seaHeight, spectrum } from './sea.mjs';
+import { identities } from './markings.mjs';
 const catalog=JSON.parse(await readFile(new URL("../../catalog/models.json",import.meta.url),"utf8"));
 
 test("exterior assets keep metre scale, waterline origin and bounded complexity",()=>{
@@ -33,9 +35,11 @@ test("terrain has a continuous seabed and keeps water and land in the fictional 
   assert.ok(elevation(4500,-4500)>0);
   assert.ok(elevation(-4500,4000)>0);
   const models=terrain(Mesh);
+  assert.ok(models.find(([name])=>name==='coast')[1].faces.every(f=>f.material!=='surf'), 'Nanite coast must be opaque');
+  assert.ok(models.find(([name])=>name==='surf')[1].faces.every(f=>f.material==='surf'));
   for(const [,m] of models) {
     assert.ok(m.vertices.every(v=>v.every(Number.isFinite)));
-    for(const face of m.faces) {
+    for(const face of m.faces.filter(f=>f.material==='land'||f.material==='sand')) {
       const [a,b,c]=face.indices.map(i=>m.vertices[i]);
       assert.ok((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0])>0,"terrain must face up");
     }
@@ -53,4 +57,44 @@ test("concave decks triangulate inside their outline",()=>{
   const faces=triangulate(outline);
   const area=faces.reduce((sum,f)=>{const [a,b,c]=f.map(i=>outline[i]);return sum+((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]))/2;},0);
   assert.equal(faces.length,4);assert.equal(area,7);
+});
+
+test('hull markings face outwards on both sides, and only attested pennants are assigned',()=>{
+  assert.equal(identities.fdi.pennant,'D660');
+  assert.equal(identities.suffren.pennant,'S635');
+  assert.deepEqual(Object.keys(identities).sort(),['fdi','suffren']);
+  for(const entry of catalog.filter(x=>x.visualRevision)) {
+    const m=buildModel(entry),faces=m.faces.filter(f=>['marking','sub_marking'].includes(f.material));
+    assert.ok(faces.length>0,entry.id);
+    for(const f of faces) {
+      const [a,b,c]=f.indices.map(i=>m.vertices[i]);
+      const normalY=(b[2]-a[2])*(c[0]-a[0])-(b[0]-a[0])*(c[2]-a[2]);
+      assert.ok(normalY*a[1]>0,entry.id+' inward lettering');
+    }
+  }
+});
+
+test('ocean rings have no internal open edges or inverted faces',()=>{
+  const m=oceanMesh(Mesh),edges=new Map();
+  for(const f of m.faces) {
+    const [a,b,c]=f.indices.map(i=>m.vertices[i]);
+    assert.ok((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0])>0);
+    for(let i=0;i<3;i++){const key=[f.indices[i],f.indices[(i+1)%3]].sort((x,y)=>x-y).join(',');edges.set(key,(edges.get(key)||0)+1);}
+  }
+  const outer=m.vertices.reduce((r,v)=>Math.max(r,Math.abs(v[0]),Math.abs(v[1])),0);
+  for(const [key,count] of edges) {
+    assert.ok(count<=2,'non-manifold edge');
+    if(count===1)for(const id of key.split(',').map(Number))assert.ok(Math.abs(Math.max(Math.abs(m.vertices[id][0]),Math.abs(m.vertices[id][1]))-outer)<1e-5,'hole in ocean');
+  }
+});
+
+test('shared visual sea is continuous, bounded, stationary when calm and deterministic',()=>{
+  assert.ok(spectrum.reduce((s,w)=>s+w.amplitude,0)<=.5);
+  for(let i=0;i<500;i++) {
+    const a=seaHeight(i*71,i*-21,12,4);
+    assert.ok(Math.abs(a)<=2);
+    assert.equal(a,seaHeight(i*71,i*-21,12,4));
+    assert.equal(seaHeight(i,i,12,0),0);
+    assert.ok(Math.abs(a-seaHeight(i*71,i*-21,12.001,4))<.01);
+  }
 });

@@ -1,4 +1,17 @@
 import { TAU, tube, path, ring, prism, chamfer, lathe, interpolate, surfaceHull, rails, ladder, helipad, fin } from "./geometry.mjs";
+import { lettering } from "./markings.mjs";
+
+function hullY(length, beam, deck, inverted=false) {
+  const stations=interpolate([[-.5,.7],[-.47,.88],[-.38,.98],[-.2,1],[0,1],[.18,.96],[.32,.78],[.42,.48],[.475,.17],[.5,.008]],5);
+  return (x,z)=>{
+    let t=x/length;
+    for(let n=0;n<5;n++)t=(x+(inverted?Math.max(0,(t-.32)/.18)*Math.max(0,z/(deck+Math.max(0,t)*1.5))*3.3:0))/length;
+    const i=Math.max(1,stations.findIndex(p=>p[0]>=t));
+    const a=stations[i-1],b=stations[i],s=(t-a[0])/(b[0]-a[0]);
+    const q=z/(deck+Math.max(0,t)*1.5);
+    return (a[1]+(b[1]-a[1])*s)*beam*.5*(q>.7?1-(q-.7)/.3*.14:1);
+  };
+}
 
 // These coordinates are an original visual reconstruction, NOT shipyard drawings.
 // Fine details unobservable in the photographs are deliberately generic.
@@ -85,11 +98,17 @@ function fdi(m) {
   // Small deck furnishings provide scale without introducing weapon systems.
   for(const x of [28,34])chamfer(m,x,0,6.4,3,2,.12,"panel",.25);
   for(const side of [-1,1])path(m,[[47,side*.65,6.6],[52,side*.6,6.64]],.07,"metal");
+  for(const side of [-1,1]) {
+    const yAt=hullY(122,17.7,5.8,true);
+    lettering(m,'D660',{x:35,z:2.5,height:1.8,side,yAt});
+    lettering(m,'FDI',{x:35,z:1.78,height:.36,side,yAt});
+    lettering(m,'AMIRAL RONARCH',{x:-33,z:3.5,height:.32,side,yAt});
+  }
 }
 
 function suffren(m) {
   // Public overall envelope: 99.5 m long, 8.8 m diameter (Naval Group).
-  lathe(m,interpolate([[-49.75,.06,.06,0],[-47,1.3,1.3,0],[-40,2.4,2.4,0],[-30,3.65,3.65,0],[-19,4.4,4.4,0],[24,4.4,4.4,0],[35,4.05,4.05,0],[42,3.35,3.35,0],[47,2.15,2.15,0],[49.75,.06,.06,0]],10),"rubber",112);
+  lathe(m,interpolate([[-49.75,.06,.06,0],[-47,1.3,1.3,0],[-40,2.4,2.4,0],[-30,3.65,3.65,0],[-19,4.4,4.4,0],[24,4.4,4.4,0],[35,4.05,4.05,0],[43,3.5,3.5,0],[46,2.95,2.95,0],[48,2.05,2.05,0],[49.2,1.22,1.22,0],[49.7,.32,.32,0],[49.75,.03,.03,0]],10),"rubber",112);
   // Flat dorsal casing blending into the cylindrical body.
   chamfer(m,3,0,3.83,67,4.05,.6,"rubber",1.4,.92);
   // Rounded sail sections, widening into a faired root at the front.
@@ -111,6 +130,16 @@ function suffren(m) {
   // Exterior shroud, hollow ring; no invented internal blades.
   const sections=[[-49.5,1.7],[-48.8,1.9],[-45.9,1.95],[-45.4,1.78],[-45.4,1.53],[-49.5,1.48],[-49.5,1.7]];
   latheShell(m,sections,"rubber");
+  // Real identifier, deliberately displayed for this educational reconstruction.
+  for(const side of [-1,1]) {
+    const yAt=(x,z)=>{
+      const t=Math.max(0,Math.min(1,(z-8)/4));
+      const cx=11.9-.1*t,l=10.4-.2*t,w=2.75-.15*t;
+      return w*.5*Math.sqrt(Math.max(0,1-((x-cx)/(l*.5))**2));
+    };
+    lettering(m,'S635',{x:11.8,z:9.6,height:1.25,side,yAt,material:'sub_marking'});
+    lettering(m,'SNA SUFFREN',{x:11.8,z:8.85,height:.27,side,yAt,material:'sub_marking'});
+  }
 }
 
 function latheShell(m,sections,material) {
@@ -129,6 +158,8 @@ function seagent(m,model) {
     chamfer(m,l*.03,0,r*.865,l*.3,w*.13,.035,"panel",.04);
   } else tube(m,[l*.29,0,r*.84],[l*.29,0,r*1.45],r*.085,"panel",16);
   for(const x of [-l*.18,l*.27])ring(m,[x,0,0],r*1.002,.012,"panel",80,"yz");
+  for(const side of [-1,1])lettering(m,xl?'SEAGENT XL':'SEAGENT M',{x:l*.05,z:0,height:xl?.23:.12,side,
+    yAt:(x,z)=>r*Math.sqrt(Math.max(0,1-(z/(r*.87))**2)),material:'sub_marking'});
 }
 
 function seaquest(m,model) {
@@ -163,6 +194,7 @@ function seaquest(m,model) {
     }
     tube(m,[-l*.41,0,d],[-l*.41,0,d+2*k],.11*k,"paint",12);
   }
+  for(const side of [-1,1])lettering(m,model.id.toUpperCase().replace('-',' '),{x:0,z:small?.24:.65,height:small?.22:.45,side,yAt:hullY(l,w,d)});
 }
 
 function carrier(m) {
@@ -205,6 +237,10 @@ function carrier(m) {
     const a=deck[i],b=deck[(i+1)%deck.length];
     rails(m,[[a[0],a[1],17.2],[b[0],b[1],17.2]],.75);
   }
+  for(const side of [-1,1]) {
+    lettering(m,'FRANCE LIBRE',{x:50,z:10.5,height:1.5,side,yAt:hullY(310,40,16)});
+    lettering(m,'PA-NG',{x:50,z:8.9,height:.65,side,yAt:hullY(310,40,16)});
+  }
 }
 
 function vsr700(m) {
@@ -221,7 +257,7 @@ function vsr700(m) {
   m.ellipsoid(-.08,0,2.22,.34,.34,.15,"panel");
   for(let i=0;i<3;i++) {
     const a=i*TAU/3,rot=([x,y,z])=>[-.08+x*Math.cos(a)-y*Math.sin(a),x*Math.sin(a)+y*Math.cos(a),z];
-    m.add([[.16,-.07,2.245],[3.6,-.12,2.22],[3.6,.03,2.225],[.16,.08,2.26]].map(rot),[[0,1,2,3],[3,2,1,0]],"dark");
+    m.add([[.16,-.07,2.245],[3.6,-.12,2.22],[3.6,.03,2.225],[.16,.08,2.26]].map(rot),[[0,1,2,3],[3,2,1,0]],"rotor");
   }
   for(const side of [-1,1]) {
     path(m,[[-1.3,side*.73,.075],[1.18,side*.73,.075],[1.48,side*.73,.21]],.035,"metal",12);
@@ -230,6 +266,7 @@ function vsr700(m) {
   }
   m.ellipsoid(.72,0,.3,.38,.38,.38,"panel");
   m.ellipsoid(.87,0,.3,.08,.17,.17,"glass");
+  for(const side of [-1,1])lettering(m,'VSR700',{x:.25,z:.93,height:.17,side,yAt:()=>.67});
 }
 
 export function detailedModel(m,model) {
