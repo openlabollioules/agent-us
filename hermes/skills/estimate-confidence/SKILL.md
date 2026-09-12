@@ -1,4 +1,7 @@
-# Skill: estimate_confidence
+---
+name: estimate-confidence
+description: Combine plusieurs niveaux de confiance capteur et recommande un croisement de sources lorsque la confiance est insuffisante.
+---
 
 ## Subagent propriétaire
 RadarAgent et OptronicAgent (skill partagée)

@@ -1,4 +1,7 @@
-# Skill: classify_surface_contact
+---
+name: classify-surface-contact
+description: Classe probabilistiquement un objet maritime à partir d'une observation optronique en tenant compte de la qualité de l'observation.
+---
 
 ## Subagent propriétaire
 OptronicAgent

@@ -1,4 +1,7 @@
-# Skill: suggest_next_actions
+---
+name: suggest-next-actions
+description: Propose jusqu'à cinq actions human-in-the-loop pertinentes selon l'état tactique et les observations disponibles.
+---
 
 ## Subagent propriétaire
 GameMasterAgent (orchestrateur) — utilise cette skill d'aide pour proposer au joueur des coups pertinents. (Skill transverse : elle n'appartient pas à un agent capteur, elle aiguille vers les autres subagents via `targetAgentId` / `skillName`.)

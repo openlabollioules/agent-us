@@ -1,4 +1,7 @@
-# Skill: assess_weather_impact
+---
+name: assess-weather-impact
+description: Estime si une anomalie ou une dégradation de capteur peut être expliquée par les conditions météorologiques.
+---
 
 ## Subagent propriétaire
 RadarAgent

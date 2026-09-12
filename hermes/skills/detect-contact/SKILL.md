@@ -1,4 +1,7 @@
-# Skill: detect_contact
+---
+name: detect-contact
+description: Décrit un contact radar simulé et signale une confiance radar faible, sans inférer d'hostilité.
+---
 
 ## Subagent propriétaire
 RadarAgent

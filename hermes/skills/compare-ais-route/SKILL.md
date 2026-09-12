@@ -1,4 +1,7 @@
-# Skill: compare_ais_route
+---
+name: compare-ais-route
+description: Compare la route observée avec la route AIS déclarée ; une incohérence reste un indice et non une preuve.
+---
 
 ## Subagent propriétaire
 NavigationAgent

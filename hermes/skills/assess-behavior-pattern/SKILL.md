@@ -1,4 +1,7 @@
-# Skill: assess_behavior_pattern
+---
+name: assess-behavior-pattern
+description: Analyse le profil de comportement d'un contact et signale les comportements ambigus sans les sur-interpréter.
+---
 
 ## Subagent propriétaire
 NavigationAgent

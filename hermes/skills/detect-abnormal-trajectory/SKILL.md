@@ -1,4 +1,7 @@
-# Skill: detect_abnormal_trajectory
+---
+name: detect-abnormal-trajectory
+description: Détecte un comportement de mouvement inhabituel à partir des indicateurs du contact sans sur-interpréter l'anomalie.
+---
 
 ## Subagent propriétaire
 NavigationAgent et ThreatAssessmentAgent (skill partagée)

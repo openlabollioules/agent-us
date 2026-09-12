@@ -1,4 +1,7 @@
-# Skill: estimate_threat_level
+---
+name: estimate-threat-level
+description: Estime un niveau de suspicion fictif à partir des observations disponibles sans présenter ce niveau comme une certitude de menace.
+---
 
 ## Subagent propriétaire
 ThreatAssessmentAgent

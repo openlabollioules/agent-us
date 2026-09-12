@@ -1,4 +1,7 @@
-# Skill: classify_acoustic_contact
+---
+name: classify-acoustic-contact
+description: Interprète une piste acoustique simulée avec son niveau d'incertitude et rappelle qu'elle doit être croisée avec d'autres indices.
+---
 
 ## Subagent propriétaire
 RadarAgent

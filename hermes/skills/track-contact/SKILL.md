@@ -1,4 +1,7 @@
-# Skill: track_contact
+---
+name: track-contact
+description: Analyse l'évolution d'un contact sur ses derniers points d'historique et signale une anomalie ou un historique insuffisant.
+---
 
 ## Subagent propriétaire
 RadarAgent et NavigationAgent (skill partagée)

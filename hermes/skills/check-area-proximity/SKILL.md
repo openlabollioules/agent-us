@@ -1,4 +1,7 @@
-# Skill: check_area_proximity
+---
+name: check-area-proximity
+description: Analyse la position et le comportement d'un contact par rapport aux zones sensibles fictives, notamment transit et stationnement.
+---
 
 ## Subagent propriétaire
 NavigationAgent

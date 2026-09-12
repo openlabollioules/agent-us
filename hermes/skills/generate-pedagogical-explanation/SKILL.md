@@ -1,4 +1,7 @@
-# Skill: generate_pedagogical_explanation
+---
+name: generate-pedagogical-explanation
+description: Explique simplement les indices observés et les concepts de surveillance maritime dans le contexte pédagogique d'Agent Us.
+---
 
 ## Subagent propriétaire
 ThreatAssessmentAgent
